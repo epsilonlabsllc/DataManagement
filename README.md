@@ -71,3 +71,7 @@ The delete method accepts two parameters: The data type and id number of the obj
 Additional Notes:
 -----------------------------------------
 Id numbers are used by the database to ensure that objects are put in the correct place and to allow the program to access these objects. It is important that programs using this library do not attempt to set these variables as they will be initialized and managed by the library. These id numbers are unique for objects of a given type; objects of different types may have the same id number. In addition, if objects are deleted from the database their id numbers are left empty and are not reused.
+
+Licensing:
+-----------------------------------------
+DataManagement is Currently Licensed under the GNU General Public License, version 3 (GPL-3.0). It is intended for open source use by anyone who would like to use it.
