@@ -11,61 +11,61 @@ Examples:
 ---------------------------------------------------------------
 ###Creating a Storable Class:
 
-public class StorableClass{
-	@Id
-	private int ident;
-	private int num1;
-	private double num2;
-	private String num3;
-	private boolean num4;
-	public static final int num5 = 3;
-	private OtherStorableClass[] ds2;
-}
+	public class StorableClass{
+		@Id
+		private int ident;
+		private int num1;
+		private double num2;
+		private String num3;
+		private boolean num4;
+		public static final int num5 = 3;
+		private OtherStorableClass[] ds2;
+	}
 A storable class must meet two requirements. First, the class must have a private instance variable of type int that will be used as the id number of the object. This variable may be read by the application, but the application should not have the capability to write to or change this variable in anyway. This variable is identified by the system with an @Id annotation. In addition, the class should not have any instance variables that are not either primitive types, strings, or other storable objects.
 
 ###Instantiating a DataManager Object:
 
-DataManager dm = new DataManager(context);
+	DataManager dm = new DataManager(context);
 The open method accepts the calling Context that is going to use the database. Usually this should be the calling Activity.
 
 ###Opening a Database for Use:
 
-dm.open();
+	dm.open();
 This method must be called before the database is used in any way.
 
 ###Closing a Database After Use:
 
-dm.close();
+	dm.close();
 This method should be called after all database operations have been performed.
 
 ###Adding an Object to the Database:
 
-int id = dm.add(new StorableClass());
+	int id = dm.add(new StorableClass());
 The add method accepts an object of a storable class as its only parameter and adds it to the database. It returns its id in the database for future use.
 
 ###Retrieving a Specific Item from the Database by ID:
 
-StorableClass storableObject = dm.get(StorableClass.class, id);
+	StorableClass storableObject = dm.get(StorableClass.class, id);
 The get method accepts two parameters: the data type of the stored object and the Id number of the object (the return value of the add method).
 
 ###Retrieving All Objects of a Given Type Stored in the Database as a Collection:
 
-storableObjectCollection = dm.getAll(StorableClass.class);
+	storableObjectCollection = dm.getAll(StorableClass.class);
 The getAll method’s only parameter is the class of the objects that should be retrieved.
 
 ###Retrieving a Collection of Storable Objects that match a given criteria:
 
-Collection<StorableClass> storableObjectCollection = dm.find(StorableClass.class, 5, "num1");
+	Collection<StorableClass> storableObjectCollection = dm.find(StorableClass.class, 5, "num1");
 The find method accepts three parameters: the data type of the stored object, the value that is being searched for, and the name of the instance variable as a string. This method is overloaded in such a way that the second parameter may be any primitive value or a string.
 
 ###Updating an Object in the Database:
 
-dm.update(id, updatedObject);
+	dm.update(id, updatedObject);
 The update method accepts two parameters: The id number of the object being updated and the updated object that will replace the existing one I the database. If the id number of the new object and the id number given as the first parameter do not match, the object’s id will be overwritten.
 
 ###Deleting an Object by its Id number:
 
-dm.delete(StorableClass.class, id);
+	dm.delete(StorableClass.class, id);
 The delete method accepts two parameters: The data type and id number of the object to be deleted.
 
 Additional Notes:
