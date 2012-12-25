@@ -13,11 +13,10 @@ public class DataSample3{
 	public static final int num5 = 4;
 	
 	public DataSample3(){
-		num1 = 4;
-		num2 = 4.0;
-		num3 = "four";
-		num4 = false;
-		ident = 500;
+		num1 = 5;
+		num2 = 5.0;
+		num3 = "five";
+		num4 = true;
 	}
 
 	public int getNum1() {
@@ -59,5 +58,9 @@ public class DataSample3{
 	public void setId(int ident) {
 		this.ident = ident;
 	}
+public String toString(){
+	String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4;
+	return string;
+}
 
 }

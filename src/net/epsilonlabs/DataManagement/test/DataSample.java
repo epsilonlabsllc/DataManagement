@@ -1,7 +1,5 @@
 package net.epsilonlabs.DataManagement.test;
 
-import java.util.ArrayList;
-
 import net.epsilonlabs.DataManagement.annotations.Id;
 
 public class DataSample{
@@ -13,7 +11,7 @@ public class DataSample{
 	private String num3;
 	private boolean num4;
 	public static final int num5 = 3;
-	private ArrayList<DataSample2> ds2;
+	private DataSample2[] ds2;
 
 	public DataSample(){
 		num1 = 3;
@@ -21,9 +19,8 @@ public class DataSample{
 		num3 = "three";
 		num4 = true;
 		ident = 500;
-		ds2 = new ArrayList<DataSample2>();
-		ds2.add(new DataSample2());
-		ds2.add(new DataSample2());
+		ds2 = new DataSample2[2];
+		ds2[0] = new DataSample2();
 	}
 
 	public int getNum1() {
@@ -64,6 +61,22 @@ public class DataSample{
 
 	public void setId(int ident) {
 		this.ident = ident;
+	}
+	
+	public DataSample2[] getDs2() {
+		return ds2;
+	}
+
+	public void setDs2(DataSample2[] ds2) {
+		this.ds2 = ds2;
+	}
+	
+	public String toString(){
+		String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4 + "\n";
+		for(DataSample2 containedDs2 : ds2){
+			string += "     " + containedDs2.toString() + "\n";
+		}
+		return string;
 	}
 
 }

@@ -18,7 +18,6 @@ public class DataSample2{
 		num2 = 4.0;
 		num3 = "four";
 		num4 = false;
-		ident = 500;
 		ds3 = new DataSample3();
 	}
 
@@ -68,6 +67,12 @@ public class DataSample2{
 
 	public void setDs3(DataSample3 ds3) {
 		this.ds3 = ds3;
+	}
+	
+	public String toString(){
+		String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4 + "\n";
+		string += "                 " + ds3.toString() + "\n";
+		return string;
 	}
 
 }

@@ -1,8 +1,4 @@
 <resources>
-
-    <string name="app_name">DataManagement</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="menu_settings">Settings</string>
-    <string name="title_activity_test">TestActivity</string>
-
+    <string name="app_name">DataManagement_Rework</string>
+    <string name="title_activity_test">TEST_ACTIVITY</string>
 </resources>
