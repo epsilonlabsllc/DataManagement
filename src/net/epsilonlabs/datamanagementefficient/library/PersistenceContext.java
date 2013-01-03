@@ -148,7 +148,7 @@ public class PersistenceContext {
 						storedObjectsMap.put(DataUtil.getId(storedContainedObj), storedContainedObj);
 					}
 					for(Object updatedContainedObj : (Collection<?>) updatedValue){
-						storedObjectsMap.put(DataUtil.getId(updatedContainedObj), updatedContainedObj);
+						updatedObjectsMap.put(DataUtil.getId(updatedContainedObj), updatedContainedObj);
 					}
 
 					for(int i=0; i<storedObjectsMap.size(); i++) {
@@ -167,8 +167,8 @@ public class PersistenceContext {
 						int key = updatedObjectsMap.keyAt(i);
 						if(storedObjectsMap.get(key) == null){
 							//check for objects that do not exist yet, create those (add reference)
-							create(updatedObjectsMap.get(key));
-							pendingDirectivesQueue.offer(new CreateReferenceDirective(instanceType, containedType, rowId, key));
+							int childId = create(updatedObjectsMap.get(key));
+							pendingDirectivesQueue.offer(new CreateReferenceDirective(instanceType, containedType, rowId, childId));
 						}
 					}
 					break;
@@ -362,7 +362,7 @@ public class PersistenceContext {
 	}
 
 	public Object getFromCache(Class<?> cls, int id){
-		return cache.get(cls, id);
+		return shallowCopy(cache.get(cls, id));
 	}
 
 	public Queue<Directive> getPendingDirectivesQueue(){
