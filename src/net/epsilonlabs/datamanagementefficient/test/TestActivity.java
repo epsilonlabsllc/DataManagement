@@ -20,11 +20,14 @@ public class TestActivity extends Activity {
 		storedClasses.add(DataSample.class);
 		dm.open();
 		
-		dm.add(new DataSample());
+		DataSample ds = dm.get(DataSample.class, 1);
+		ds.getDs2().get(0).setNum2(3.14);
+		dm.update(ds);
+		
 		dm.commit();
-//		tv.setText(sameDs.toString());
-
-		System.out.println(debugger.printTable(storedClasses) + "\n\n" + debugger.printCache());
+		String debug = debugger.printTable(storedClasses) + "\n\n" + debugger.printCache();
+		tv.setText(debug);
+		System.out.println(debug);
 		dm.close();
 		setContentView(tv);
 	}

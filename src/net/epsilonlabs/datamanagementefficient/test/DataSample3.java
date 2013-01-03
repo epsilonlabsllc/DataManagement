@@ -14,7 +14,7 @@ public class DataSample3{
 
 	public DataSample3(){
 		num1 = 5;
-		num2 = 5.0;
+		num2 = 6.0;
 		num3 = "five";
 		num4 = true;
 	}

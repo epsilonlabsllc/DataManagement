@@ -16,6 +16,7 @@ import net.epsilonlabs.datamanagementefficient.exception.InternalDatabaseExcepti
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
 public class PersistenceManager {
@@ -190,7 +191,7 @@ public class PersistenceManager {
 
 			for(Field field : nonPrimitveFieldQueue){
 				if(cursor.isNull(cursor.getColumnIndex(field.getName() + "_ref"))){
-					field.set(newObj, fetch(field.getType(), null));
+					field.set(newObj, null);
 				}else{
 					int nonPrimitiveReferenceId = cursor.getInt(cursor.getColumnIndex(field.getName() + "_ref"));
 					String nonPrimitiveReferenceSQLStatement = DataUtil.getIdField(field.getType()).getName() + " = " + nonPrimitiveReferenceId;
@@ -208,24 +209,27 @@ public class PersistenceManager {
 				Field containedObjIdField = DataUtil.getIdField(containedClass);
 				String collectionReferenceTableName = type.getSimpleName() + "_" + containedClass.getSimpleName();
 				String collectionReferenceSQLStatement = type.getSimpleName() + " = " + String.valueOf(rowId);
-				Cursor collectionReferenceCursor = db.query(collectionReferenceTableName, new String[]{containedClass.getSimpleName()}, collectionReferenceSQLStatement, null, null, null, null);
-				if(!collectionReferenceCursor.moveToFirst()){
-					field.set(newObj, null);
-				}else{
-					Collection newCollection = (Collection) field.getType().newInstance();
-					while(!collectionReferenceCursor.isAfterLast()){
-						int containedObjId = collectionReferenceCursor.getInt(collectionReferenceCursor.getColumnIndex(containedClass.getSimpleName()));
-						String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
-						Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
-						containedObjCursor.moveToFirst();
-						newCollection.add(fetch(containedClass, containedObjCursor));
-						collectionReferenceCursor.moveToNext();
+				try{
+					Cursor collectionReferenceCursor = db.query(collectionReferenceTableName, new String[]{containedClass.getSimpleName()}, collectionReferenceSQLStatement, null, null, null, null);
+					if(!collectionReferenceCursor.moveToFirst()){
+						field.set(newObj, field.getType().newInstance());
+					}else{
+						Collection newCollection = (Collection) field.getType().newInstance();
+						while(!collectionReferenceCursor.isAfterLast()){
+							int containedObjId = collectionReferenceCursor.getInt(collectionReferenceCursor.getColumnIndex(containedClass.getSimpleName()));
+							String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
+							Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
+							containedObjCursor.moveToFirst();
+							newCollection.add(fetch(containedClass, containedObjCursor));
+							collectionReferenceCursor.moveToNext();
+						}
+						field.set(newObj, newCollection);
+						collectionReferenceCursor.close();
 					}
-					field.set(newObj, newCollection);
-					collectionReferenceCursor.close();
+				}catch(SQLException e){
+					field.set(newObj, field.getType().newInstance());
 				}
 			}
-
 			return newObj;
 		}catch(IllegalAccessException e){
 			throw new InternalDatabaseException();

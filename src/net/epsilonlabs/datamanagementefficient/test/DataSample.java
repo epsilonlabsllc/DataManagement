@@ -20,7 +20,9 @@ public class DataSample{
 		num2 = 3.0;
 		num3 = "three";
 		num4 = true;
-		ds2 = null;
+		ds2 = new ArrayList<DataSample2>();
+		ds2.add(new DataSample2());
+		ds2.add(new DataSample2());
 	}
 
 	public int getNum1() {

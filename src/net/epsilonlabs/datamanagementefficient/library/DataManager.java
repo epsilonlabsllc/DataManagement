@@ -12,6 +12,7 @@ import net.epsilonlabs.datamanagementefficient.exception.DatabaseNotOpenExpectio
 
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
 public class DataManager {
@@ -81,7 +82,12 @@ public class DataManager {
 		if(object != null) return object;
 		String tableName = cls.getSimpleName();
 		String SQLSelectionStatement = DataUtil.getIdField(cls).getName() + " = " + String.valueOf(id);
-		Cursor cursor = db.query(tableName, null, SQLSelectionStatement, null, null, null, null);
+		Cursor cursor = null;
+		try{
+			cursor = db.query(tableName, null, SQLSelectionStatement, null, null, null, null);
+		}catch(SQLException e){
+			return null;
+		}
 		if(!cursor.moveToFirst()) return null;
 		object = pm.fetch(cls, cursor);
 		cursor.close();
