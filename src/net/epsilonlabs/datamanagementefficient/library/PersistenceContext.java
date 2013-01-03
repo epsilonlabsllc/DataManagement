@@ -373,11 +373,15 @@ public class PersistenceContext {
 			Object instanceValue;
 			for (Field typeField : typeFields) {
 				if (DataUtil.getFieldTypeId(typeField) == DataUtil.FIELD_TYPE_COLLECTION) {
-					Collection<Object> newCollection = (Collection<Object>) typeField.getType().newInstance();
-					for (Object containedObj : (Collection<?>) typeField.get(instance)) {
-						newCollection.add(shallowCopy(containedObj));
+					if(typeField.get(instance) == null){
+						typeField.set(newInstance, null);
+					}else{
+						Collection<Object> newCollection = (Collection<Object>) typeField.getType().newInstance();
+						for (Object containedObj : (Collection<?>) typeField.get(instance)) {
+							newCollection.add(shallowCopy(containedObj));
+						}
+						typeField.set(newInstance, newCollection);
 					}
-					typeField.set(newInstance, newCollection);
 				}else if(DataUtil.getFieldTypeId(typeField) == DataUtil.FIELD_TYPE_NON_PRIMITIVE){
 					typeField.set(newInstance, shallowCopy(typeField.get(instance)));
 				}else{
@@ -402,7 +406,7 @@ public class PersistenceContext {
 	public void clearPendingDirectivesQueue(){
 		pendingDirectivesQueue.clear();
 	}
-	
+
 	public Cache getCache(){
 		return cache;
 	}

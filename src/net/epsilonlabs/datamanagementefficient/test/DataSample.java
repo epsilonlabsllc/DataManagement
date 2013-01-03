@@ -20,9 +20,7 @@ public class DataSample{
 		num2 = 3.0;
 		num3 = "three";
 		num4 = true;
-		ds2 = new ArrayList<DataSample2>();
-		ds2.add(new DataSample2());
-		ds2.add(new DataSample2());
+		ds2 = null;
 	}
 
 	public int getNum1() {
@@ -64,7 +62,7 @@ public class DataSample{
 	public void setId(int ident) {
 		this.ident = ident;
 	}
-	
+
 	public ArrayList<DataSample2> getDs2() {
 		return ds2;
 	}
@@ -72,12 +70,18 @@ public class DataSample{
 	public void setDs2(ArrayList<DataSample2> ds2) {
 		this.ds2 = ds2;
 	}
-	
+
 	public String toString(){
-		String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4 + "\n";
-		for(DataSample2 containedDs2 : ds2){
-			string += "     " + containedDs2.toString() + "\n";
+		if(ds2 != null){
+			String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4 + "\n";
+			for(DataSample2 containedDs2 : ds2){
+				string += "     " + containedDs2.toString() + "\n";
+			}
+			return string;
 		}
+		
+		String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4 + "\n";
+		string += "     " + " null " + "\n";
 		return string;
 	}
 

@@ -18,7 +18,6 @@ public class TestActivity extends Activity {
 		Debugger debugger = new Debugger(dm);
 		ArrayList<Class<?>> storedClasses = new ArrayList<Class<?>>();
 		storedClasses.add(DataSample.class);
-		storedClasses.add(DataSample2.class);
 		dm.open();
 		
 		dm.add(new DataSample());

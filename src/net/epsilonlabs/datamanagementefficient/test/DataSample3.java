@@ -11,7 +11,7 @@ public class DataSample3{
 	private String num3;
 	private boolean num4;
 	public static final int num5 = 4;
-	
+
 	public DataSample3(){
 		num1 = 5;
 		num2 = 5.0;
@@ -58,9 +58,10 @@ public class DataSample3{
 	public void setId(int ident) {
 		this.ident = ident;
 	}
-public String toString(){
-	String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4;
-	return string;
-}
+
+	public String toString(){
+		String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4;
+		return string;
+	}
 
 }
