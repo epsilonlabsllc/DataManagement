@@ -1,5 +1,6 @@
 package net.epsilonlabs.datamanagementefficient.library;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,5 +35,16 @@ public class Cache {
 		if(classCache.get(id) == null) return false;
 		classCache.remove(id);
 		return true;
+	}
+	
+	public ArrayList<Object> getAllCachedObjects(){
+		ArrayList<Object> allObjectList = new ArrayList<Object>();
+		for(Class<?> cls : cache.keySet()){
+			SparseArray<Object> classList =  cache.get(cls);
+			for(int i=0; i<classList.size(); i++){
+				allObjectList.add(classList.get(classList.keyAt(i)));
+			}
+		}
+		return allObjectList;
 	}
 }

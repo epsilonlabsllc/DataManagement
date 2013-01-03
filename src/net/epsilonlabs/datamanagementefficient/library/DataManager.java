@@ -8,6 +8,7 @@ import net.epsilonlabs.datamanagementefficient.directive.DeleteDirective;
 import net.epsilonlabs.datamanagementefficient.directive.DeleteReferenceDirective;
 import net.epsilonlabs.datamanagementefficient.directive.Directive;
 import net.epsilonlabs.datamanagementefficient.directive.UpdateDirective;
+import net.epsilonlabs.datamanagementefficient.exception.DatabaseNotOpenExpection;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -18,6 +19,7 @@ public class DataManager {
 	private SQLiteDatabase db = null;
 	private PersistenceContext pc = null;
 	private PersistenceManager pm = null;
+	private boolean isOpen = false;
 	
 	public DataManager(Context context){
 		this.helper = new SQLHelper(context);
@@ -27,14 +29,17 @@ public class DataManager {
 		db = helper.getWritableDatabase();
 		pc = new PersistenceContext(db);
 		pm = new PersistenceManager(db);
+		isOpen = true;
 	}
 	
 	public void close(){
 		commit();
 		db.close();
+		isOpen = false;
 	}
 	
 	public void commit(){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
 		Queue<Directive> pendingDirectives = pc.getPendingDirectivesQueue();
 		for(Directive directive : pendingDirectives){
 			if(directive instanceof CreateDirective){
@@ -53,20 +58,25 @@ public class DataManager {
 	}
 
 	public int add(Object obj){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
 		pc.create(obj);
 		return DataUtil.getId(obj);
 	}
 	
 	public void delete(Class<?> cls, int id){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
 		pc.delete(cls, id);
 	}
 	
 	public <T> void update(T obj){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
+		if(obj == null) throw new NullPointerException();
 		pc.update(obj);
 	}
 	
 	@SuppressWarnings("unchecked")
 	public <T> T get(Class<T> cls, int id){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
 		T object = (T) pc.getFromCache(cls, id);
 		if(object != null) return object;
 		String tableName = cls.getSimpleName();
@@ -79,9 +89,22 @@ public class DataManager {
 	}
 	
 	public <T> int size(Class<T> cls){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
 		Cursor c = db.query(cls.getSimpleName(), null, null , null, null, null, null);
 		int size = c.getCount();
 		c.close();
 		return size;
+	}
+
+	public SQLiteDatabase getDb() {
+		return db;
+	}
+
+	public PersistenceContext getPc() {
+		return pc;
+	}
+	
+	public boolean isOpen(){
+		return isOpen;
 	}
 }

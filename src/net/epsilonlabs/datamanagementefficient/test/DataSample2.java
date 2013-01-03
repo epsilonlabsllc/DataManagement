@@ -12,13 +12,13 @@ public class DataSample2{
 	private boolean num4;
 	public static final int num5 = 4;
 	private DataSample3 ds3;
-	
+
 	public DataSample2(){
 		num1 = 4;
 		num2 = 4.0;
 		num3 = "four";
 		num4 = false;
-		ds3 = new DataSample3();
+		ds3 = null;
 	}
 
 	public int getNum1() {
@@ -68,10 +68,16 @@ public class DataSample2{
 	public void setDs3(DataSample3 ds3) {
 		this.ds3 = ds3;
 	}
-	
+
 	public String toString(){
+		if(ds3 != null){
+			String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4 + "\n";
+			string += "                 " + ds3.toString() + "\n";
+			return string;
+		}
+		
 		String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4 + "\n";
-		string += "                 " + ds3.toString() + "\n";
+		string += "                 " + " null " + "\n";
 		return string;
 	}
 

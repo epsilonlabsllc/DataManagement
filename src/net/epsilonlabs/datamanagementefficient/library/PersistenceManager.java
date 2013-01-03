@@ -61,7 +61,8 @@ public class PersistenceManager {
 					else cv.put(field.getName(), 0);
 					break;
 				case DataUtil.FIELD_TYPE_NON_PRIMITIVE:
-					cv.put(field.getName() + "_ref", DataUtil.getId(field.get(obj)));
+					if(field.get(obj) == null) cv.put(field.getName() + "_ref", (Integer) null);
+					else cv.put(field.getName() + "_ref", DataUtil.getId(field.get(obj)));
 					break;
 				}
 			}
@@ -151,12 +152,12 @@ public class PersistenceManager {
 	public <T> T fetch(Class<T> type, Cursor cursor){
 		Queue<Field> nonPrimitveFieldQueue = new LinkedList<Field>();
 		Queue<Field> nonPrimitveCollectionFieldQueue = new LinkedList<Field>();
-		
+
 		try{
 			T newObj = type.newInstance();
 			Field idField = DataUtil.getIdField(type);
 			Field[] fields = DataUtil.getFields(type);
-			
+
 			for(Field field: fields){
 				switch(DataUtil.getFieldTypeId(field)){
 				case DataUtil.FIELD_TYPE_INT:
@@ -186,15 +187,20 @@ public class PersistenceManager {
 					break;
 				}
 			}
-			
+
 			for(Field field : nonPrimitveFieldQueue){
-				int nonPrimitiveReferenceId = cursor.getInt(cursor.getColumnIndex(field.getName() + "_ref"));
-				String nonPrimitiveReferenceSQLStatement = DataUtil.getIdField(field.getType()).getName() + " = " + nonPrimitiveReferenceId;
-				Cursor nonPrimitiveReferenceCursor = db.query(field.getType().getSimpleName(), null, nonPrimitiveReferenceSQLStatement, null, null, null, null);
-				field.set(newObj, fetch(field.getType(), nonPrimitiveReferenceCursor));
-				nonPrimitiveReferenceCursor.close();
+				if(cursor.isNull(cursor.getColumnIndex(field.getName() + "_ref"))){
+					field.set(newObj, fetch(field.getType(), null));
+				}else{
+					int nonPrimitiveReferenceId = cursor.getInt(cursor.getColumnIndex(field.getName() + "_ref"));
+					String nonPrimitiveReferenceSQLStatement = DataUtil.getIdField(field.getType()).getName() + " = " + nonPrimitiveReferenceId;
+					Cursor nonPrimitiveReferenceCursor = db.query(field.getType().getSimpleName(), null, nonPrimitiveReferenceSQLStatement, null, null, null, null);
+					nonPrimitiveReferenceCursor.moveToFirst();
+					field.set(newObj, fetch(field.getType(), nonPrimitiveReferenceCursor));
+					nonPrimitiveReferenceCursor.close();
+				}
 			}
-			
+
 			for(Field field : nonPrimitveCollectionFieldQueue){
 				Class<?> containedClass = DataUtil.getStoredClassOfCollection(field);
 				int rowId = idField.getInt(newObj);
@@ -203,19 +209,23 @@ public class PersistenceManager {
 				String collectionReferenceTableName = type.getSimpleName() + "_" + containedClass.getSimpleName();
 				String collectionReferenceSQLStatement = type.getSimpleName() + " = " + String.valueOf(rowId);
 				Cursor collectionReferenceCursor = db.query(collectionReferenceTableName, new String[]{containedClass.getSimpleName()}, collectionReferenceSQLStatement, null, null, null, null);
-				collectionReferenceCursor.moveToFirst();
-				Collection newCollection = (Collection) field.getType().newInstance();
-				while(!collectionReferenceCursor.isAfterLast()){
-					int containedObjId = collectionReferenceCursor.getInt(collectionReferenceCursor.getColumnIndex(containedClass.getSimpleName()));
-					String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
-					Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
-					containedObjCursor.moveToFirst();
-					newCollection.add(fetch(containedClass, containedObjCursor));
-					collectionReferenceCursor.moveToNext();
+				if(!collectionReferenceCursor.moveToFirst()){
+					field.set(newObj, null);
+				}else{
+					Collection newCollection = (Collection) field.getType().newInstance();
+					while(!collectionReferenceCursor.isAfterLast()){
+						int containedObjId = collectionReferenceCursor.getInt(collectionReferenceCursor.getColumnIndex(containedClass.getSimpleName()));
+						String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
+						Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
+						containedObjCursor.moveToFirst();
+						newCollection.add(fetch(containedClass, containedObjCursor));
+						collectionReferenceCursor.moveToNext();
+					}
+					field.set(newObj, newCollection);
+					collectionReferenceCursor.close();
 				}
-				collectionReferenceCursor.close();
 			}
-			
+
 			return newObj;
 		}catch(IllegalAccessException e){
 			throw new InternalDatabaseException();

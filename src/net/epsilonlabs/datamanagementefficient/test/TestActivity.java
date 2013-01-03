@@ -1,5 +1,8 @@
 package net.epsilonlabs.datamanagementefficient.test;
 
+import java.util.ArrayList;
+
+import net.epsilonlabs.datamanagementefficient.debug.Debugger;
 import net.epsilonlabs.datamanagementefficient.library.DataManager;
 import android.app.Activity;
 import android.os.Bundle;
@@ -12,17 +15,17 @@ public class TestActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		TextView tv = new TextView(this);
 		DataManager dm = new DataManager(this);
+		Debugger debugger = new Debugger(dm);
+		ArrayList<Class<?>> storedClasses = new ArrayList<Class<?>>();
+		storedClasses.add(DataSample.class);
+		storedClasses.add(DataSample2.class);
 		dm.open();
 		
-		int id = dm.add(new DataSample());
-		DataSample ds = dm.get(DataSample.class, id);
-		ds.getDs2().add(new DataSample2());
-		dm.update(ds);
+		dm.add(new DataSample());
 		dm.commit();
-		DataSample sameDs = dm.get(DataSample.class, id);
-		
-		tv.setText(sameDs.toString());
-		
+//		tv.setText(sameDs.toString());
+
+		System.out.println(debugger.printTable(storedClasses) + "\n\n" + debugger.printCache());
 		dm.close();
 		setContentView(tv);
 	}
