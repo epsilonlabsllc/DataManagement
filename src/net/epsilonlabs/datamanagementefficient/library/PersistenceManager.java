@@ -2,10 +2,7 @@ package net.epsilonlabs.datamanagementefficient.library;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 
 import net.epsilonlabs.datamanagementefficient.directive.CreateDirective;
 import net.epsilonlabs.datamanagementefficient.directive.CreateReferenceDirective;
@@ -13,10 +10,7 @@ import net.epsilonlabs.datamanagementefficient.directive.DeleteDirective;
 import net.epsilonlabs.datamanagementefficient.directive.DeleteReferenceDirective;
 import net.epsilonlabs.datamanagementefficient.directive.UpdateDirective;
 import net.epsilonlabs.datamanagementefficient.exception.InternalDatabaseException;
-
 import android.content.ContentValues;
-import android.database.Cursor;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
 public class PersistenceManager {
@@ -148,96 +142,7 @@ public class PersistenceManager {
 		cv.put(childName, childValue);
 		db.insert(tableName, null, cv);
 	}
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public <T> T fetch(Class<T> type, Cursor cursor){
-		Queue<Field> nonPrimitveFieldQueue = new LinkedList<Field>();
-		Queue<Field> nonPrimitveCollectionFieldQueue = new LinkedList<Field>();
-
-		try{
-			T newObj = type.newInstance();
-			Field idField = DataUtil.getIdField(type);
-			Field[] fields = DataUtil.getFields(type);
-
-			for(Field field: fields){
-				switch(DataUtil.getFieldTypeId(field)){
-				case DataUtil.FIELD_TYPE_INT:
-					field.setInt(newObj, cursor.getInt(cursor.getColumnIndex(field.getName())));
-					break;
-				case DataUtil.FIELD_TYPE_DOUBLE:
-					field.setDouble(newObj, cursor.getDouble(cursor.getColumnIndex(field.getName())));
-					break;
-				case DataUtil.FIELD_TYPE_FLOAT:
-					field.setFloat(newObj, cursor.getFloat(cursor.getColumnIndex(field.getName())));
-					break;
-				case DataUtil.FIELD_TYPE_LONG:
-					field.setLong(newObj, cursor.getLong(cursor.getColumnIndex(field.getName())));
-					break;
-				case DataUtil.FIELD_TYPE_STRING:
-					field.set(newObj, cursor.getString(cursor.getColumnIndex(field.getName())));
-					break;
-				case DataUtil.FIELD_TYPE_BOOLEAN:
-					if(cursor.getInt(cursor.getColumnIndex(field.getName())) == 1) field.setBoolean(newObj, true);
-					else field.setBoolean(newObj, false);
-					break;
-				case DataUtil.FIELD_TYPE_NON_PRIMITIVE:
-					nonPrimitveFieldQueue.offer(field);
-					break;
-				case DataUtil.FIELD_TYPE_COLLECTION:
-					nonPrimitveCollectionFieldQueue.offer(field);
-					break;
-				}
-			}
-
-			for(Field field : nonPrimitveFieldQueue){
-				if(cursor.isNull(cursor.getColumnIndex(field.getName() + "_ref"))){
-					field.set(newObj, null);
-				}else{
-					int nonPrimitiveReferenceId = cursor.getInt(cursor.getColumnIndex(field.getName() + "_ref"));
-					String nonPrimitiveReferenceSQLStatement = DataUtil.getIdField(field.getType()).getName() + " = " + nonPrimitiveReferenceId;
-					Cursor nonPrimitiveReferenceCursor = db.query(field.getType().getSimpleName(), null, nonPrimitiveReferenceSQLStatement, null, null, null, null);
-					nonPrimitiveReferenceCursor.moveToFirst();
-					field.set(newObj, fetch(field.getType(), nonPrimitiveReferenceCursor));
-					nonPrimitiveReferenceCursor.close();
-				}
-			}
-
-			for(Field field : nonPrimitveCollectionFieldQueue){
-				Class<?> containedClass = DataUtil.getStoredClassOfCollection(field);
-				int rowId = idField.getInt(newObj);
-				String containedObjTableName = containedClass.getSimpleName();
-				Field containedObjIdField = DataUtil.getIdField(containedClass);
-				String collectionReferenceTableName = type.getSimpleName() + "_" + containedClass.getSimpleName();
-				String collectionReferenceSQLStatement = type.getSimpleName() + " = " + String.valueOf(rowId);
-				try{
-					Cursor collectionReferenceCursor = db.query(collectionReferenceTableName, new String[]{containedClass.getSimpleName()}, collectionReferenceSQLStatement, null, null, null, null);
-					if(!collectionReferenceCursor.moveToFirst()){
-						field.set(newObj, field.getType().newInstance());
-					}else{
-						Collection newCollection = (Collection) field.getType().newInstance();
-						while(!collectionReferenceCursor.isAfterLast()){
-							int containedObjId = collectionReferenceCursor.getInt(collectionReferenceCursor.getColumnIndex(containedClass.getSimpleName()));
-							String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
-							Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
-							containedObjCursor.moveToFirst();
-							newCollection.add(fetch(containedClass, containedObjCursor));
-							collectionReferenceCursor.moveToNext();
-						}
-						field.set(newObj, newCollection);
-						collectionReferenceCursor.close();
-					}
-				}catch(SQLException e){
-					field.set(newObj, field.getType().newInstance());
-				}
-			}
-			return newObj;
-		}catch(IllegalAccessException e){
-			throw new InternalDatabaseException();
-		}catch(InstantiationException e){
-			throw new InternalDatabaseException();
-		}
-	}
-
+	
 	private void executeCreateIfNotExistsSQLStatement(String tableName, ArrayList<String> createStrings) {
 		String createStatement = "CREATE TABLE IF NOT EXISTS " + tableName + "(";
 		for (int i = 0; i < createStrings.size(); i++) {

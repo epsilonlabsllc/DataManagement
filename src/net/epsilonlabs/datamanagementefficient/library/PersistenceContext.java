@@ -43,7 +43,10 @@ public class PersistenceContext {
 		Field idField = DataUtil.getIdField(instanceType);
 		Field[] instanceFields = DataUtil.getFields(instanceType);
 
-		Integer rowId = nextIdMap.get(instanceType);
+		Integer rowId = DataUtil.getId(newInstance);
+		if(rowId != 0) return rowId;
+
+		rowId = nextIdMap.get(instanceType);
 		if (rowId == null) {
 			try{
 				Cursor cursor = db.rawQuery("SELECT MAX(" + idField.getName() + ") FROM " + instanceType.getSimpleName(), null);
@@ -100,28 +103,31 @@ public class PersistenceContext {
 	}
 
 	public void update(Object updatedInstance){
+		update(updatedInstance, new Cache());
+	}
 
+	public void update(Object updatedInstance, Cache previosulyUpdatedObjects){
 		Map<Field, Object> updateMap = new HashMap<Field, Object>();
 		Class<?> instanceType = updatedInstance.getClass();
 		Field[] instanceFields = DataUtil.getFields(instanceType);
 		int rowId = DataUtil.getId(updatedInstance);
 
-		Object storedInstance = cache.get(instanceType, rowId);
-		if(storedInstance == null){
-			storedInstance = fetchToCache(instanceType, rowId);
-		}
-
-		for(Field field : instanceFields){
-
-			Object storedValue = null;
-			Object updatedValue = null;
-			try{
-				storedValue = field.get(storedInstance);
-				updatedValue = field.get(updatedInstance);
-			}catch(IllegalAccessException e){
-				throw new InaccessableObjectException();
+		if(previosulyUpdatedObjects.get(instanceType, rowId) == null){
+			Object storedInstance = cache.get(instanceType, rowId);
+			if(storedInstance == null){
+				storedInstance = fetchToCache(instanceType, rowId);
 			}
-			if(!areEqual(storedValue, updatedValue)){
+
+			for(Field field : instanceFields){
+				Object storedValue = null;
+				Object updatedValue = null;
+				try{
+					storedValue = field.get(storedInstance);
+					updatedValue = field.get(updatedInstance);
+				}catch(IllegalAccessException e){
+					throw new InaccessableObjectException();
+				}
+
 				switch (DataUtil.getFieldTypeId(field)) {
 				case DataUtil.FIELD_TYPE_INT:
 				case DataUtil.FIELD_TYPE_DOUBLE:
@@ -138,7 +144,8 @@ public class PersistenceContext {
 					}else if(storedValue != null && updatedValue == null){
 						//had a value before, now is null
 						updateMap.put(field, null);
-						delete(field.getType(), DataUtil.getId(storedValue));
+						previosulyUpdatedObjects.put(updatedInstance);
+						delete(field.getType(), DataUtil.getId(storedValue), previosulyUpdatedObjects); //TODO: bug on circular objects
 					}else if(storedValue != null && updatedValue != null){
 						//value is being altered (wasn't and will not be null)
 						Field idField = DataUtil.getIdField(storedValue.getClass());
@@ -147,7 +154,8 @@ public class PersistenceContext {
 						} catch (Exception e) {
 							throw new IdFieldIsInaccessibleException();
 						}
-						update(updatedValue);
+						previosulyUpdatedObjects.put(updatedInstance);
+						update(updatedValue, previosulyUpdatedObjects);
 					}
 					break;
 				case DataUtil.FIELD_TYPE_COLLECTION:
@@ -169,11 +177,13 @@ public class PersistenceContext {
 						int key = storedObjectsMap.keyAt(i);
 						if(updatedObjectsMap.get(key) == null){
 							//check for objects that no longer exist, delete those (delete reference)
-							delete(containedType, key);
+							previosulyUpdatedObjects.put(updatedInstance);
+							delete(containedType, key, previosulyUpdatedObjects);
 							pendingDirectivesQueue.offer(new DeleteReferenceDirective(instanceType, containedType, rowId, key));
 						}else{
 							//check for objects that already exist, update those (don't change reference)
-							update(updatedObjectsMap.get(key));
+							previosulyUpdatedObjects.put(updatedInstance);
+							update(updatedObjectsMap.get(key), previosulyUpdatedObjects);
 						}
 					}
 
@@ -188,82 +198,65 @@ public class PersistenceContext {
 					break;
 				}
 			}
-		}
 
-		cache.put(shallowCopy(updatedInstance));
-		if(!updateMap.isEmpty()) pendingDirectivesQueue.offer(new UpdateDirective(instanceType, rowId, updateMap));
+			cache.put(shallowCopy(updatedInstance));
+			if(!updateMap.isEmpty()) pendingDirectivesQueue.offer(new UpdateDirective(instanceType, rowId, updateMap));
+		}
 	}
 
-	private <T> boolean areEqual(T obj1, T obj2){
-
-		if(obj1 == null && obj2 == null) return true;
-		if((obj1 == null && obj2 != null) || (obj1 != null && obj2 == null)) return false;
-
-		if(obj1 instanceof Integer || obj1 instanceof Double || obj1 instanceof Float || obj1 instanceof Long || obj1 instanceof String || obj1 instanceof Boolean){
-			return obj1.equals(obj2);
-		}
-
-		Class<?> type = obj1.getClass();
-		Object obj1value = null;
-		Object obj2value = null;
-		for(Field field : DataUtil.getFields(type)){
-			try {
-				obj1value = field.get(obj1);
-				obj2value = field.get(obj2);
-			}catch (IllegalAccessException e) {
-				throw new InaccessableObjectException();
-			}
-
-			if(!areEqual(obj1value, obj2value)) return false;
-		}
-		return true;
+	public void delete(Class<?> instanceType, int rowId){
+		delete(instanceType, rowId, new Cache());
 	}
 
-	public void delete(Class<?> instanceType, int rowId) {
-
-		Field[] instanceFields = DataUtil.getFields(instanceType);
-		Object storedInstance = cache.get(instanceType, rowId);
-		if(storedInstance == null){
-			storedInstance = fetchToCache(instanceType, rowId);
-		}
-
-		for(Field field : instanceFields){
-			switch (DataUtil.getFieldTypeId(field)) {
-			case DataUtil.FIELD_TYPE_INT:
-			case DataUtil.FIELD_TYPE_DOUBLE:
-			case DataUtil.FIELD_TYPE_FLOAT:
-			case DataUtil.FIELD_TYPE_LONG:
-			case DataUtil.FIELD_TYPE_STRING:
-			case DataUtil.FIELD_TYPE_BOOLEAN:
-				break;
-			case DataUtil.FIELD_TYPE_NON_PRIMITIVE:
-				try {
-					if(field.get(storedInstance) != null) delete(field.getType(), DataUtil.getId(field.get(storedInstance)));
-				} catch (IllegalAccessException e) {
-					throw new InaccessableObjectException();
-				}
-				break;
-			case DataUtil.FIELD_TYPE_COLLECTION:
-				try{
-					if(field.get(storedInstance) != null){
-						Class<?> containedType = DataUtil.getStoredClassOfCollection(field);
-						for(Object containedObject : (Collection<?>)field.get(storedInstance)){
-							int containedObjId = DataUtil.getId(containedObject);
-							delete(containedType, containedObjId);
-							pendingDirectivesQueue.offer(new DeleteReferenceDirective(instanceType, containedType, rowId, containedObjId));
+	private void delete(Class<?> instanceType, int rowId, Cache previouslyDeletedObjects) {
+		if(previouslyDeletedObjects.get(instanceType, rowId) == null){
+			Field[] instanceFields = DataUtil.getFields(instanceType);		
+			Object storedInstance = cache.get(instanceType, rowId);
+			if(storedInstance == null) storedInstance = fetchToCache(instanceType, rowId);
+			if(storedInstance != null){
+				for(Field field : instanceFields){
+					switch (DataUtil.getFieldTypeId(field)) {
+					case DataUtil.FIELD_TYPE_INT:
+					case DataUtil.FIELD_TYPE_DOUBLE:
+					case DataUtil.FIELD_TYPE_FLOAT:
+					case DataUtil.FIELD_TYPE_LONG:
+					case DataUtil.FIELD_TYPE_STRING:
+					case DataUtil.FIELD_TYPE_BOOLEAN:
+						break;
+					case DataUtil.FIELD_TYPE_NON_PRIMITIVE:
+						try {
+							if(field.get(storedInstance) != null) {
+								previouslyDeletedObjects.put(storedInstance);
+								delete(field.getType(), DataUtil.getId(field.get(storedInstance)), previouslyDeletedObjects);
+							}
+						} catch (IllegalAccessException e) {
+							throw new InaccessableObjectException();
 						}
+						break;
+					case DataUtil.FIELD_TYPE_COLLECTION:
+						try{
+							if(field.get(storedInstance) != null){
+								Class<?> containedType = DataUtil.getStoredClassOfCollection(field);
+								previouslyDeletedObjects.put(storedInstance);
+								for(Object containedObject : (Collection<?>)field.get(storedInstance)){
+									int containedObjId = DataUtil.getId(containedObject);
+									delete(containedType, containedObjId, previouslyDeletedObjects);
+									pendingDirectivesQueue.offer(new DeleteReferenceDirective(instanceType, containedType, rowId, containedObjId));
+								}
+							}
+						} catch (IllegalAccessException e) {
+							throw new InaccessableObjectException();
+						}
+						break;
 					}
-				} catch (IllegalAccessException e) {
-					throw new InaccessableObjectException();
 				}
-				break;
+				cache.remove(instanceType, rowId);	
+				pendingDirectivesQueue.offer(new DeleteDirective(instanceType, rowId));
 			}
 		}
-		cache.remove(instanceType, rowId);	
-		pendingDirectivesQueue.offer(new DeleteDirective(instanceType, rowId));
 	}
 
-	private Object fetchToCache(Class<?> cls, int id){
+	public Object fetchToCache(Class<?> cls, int id){
 		String tableName = cls.getSimpleName();
 		String SQLSelectionStatement = DataUtil.getIdField(cls).getName() + " = " + String.valueOf(id);
 		Cursor cursor = null;
@@ -276,11 +269,11 @@ public class PersistenceContext {
 		Object object = fetch(cls, cursor);
 		cursor.close();
 		cache.put(object);
-		return object;
+		return shallowCopy(object);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public <T> T fetch(Class<T> type, Cursor cursor){
+	private <T> T fetch(Class<T> type, Cursor cursor){
 		Queue<Field> nonPrimitveFieldQueue = new LinkedList<Field>();
 		Queue<Field> nonPrimitveCollectionFieldQueue = new LinkedList<Field>();
 
@@ -319,16 +312,23 @@ public class PersistenceContext {
 				}
 			}
 
+			cache.put(newObj);
+
 			for(Field field : nonPrimitveFieldQueue){
 				if(cursor.isNull(cursor.getColumnIndex(field.getName() + "_ref"))){
 					field.set(newObj, null);
 				}else{
 					int nonPrimitiveReferenceId = cursor.getInt(cursor.getColumnIndex(field.getName() + "_ref"));
-					String nonPrimitiveReferenceSQLStatement = DataUtil.getIdField(field.getType()).getName() + " = " + nonPrimitiveReferenceId;
-					Cursor nonPrimitiveReferenceCursor = db.query(field.getType().getSimpleName(), null, nonPrimitiveReferenceSQLStatement, null, null, null, null);
-					nonPrimitiveReferenceCursor.moveToFirst();
-					field.set(newObj, fetch(field.getType(), nonPrimitiveReferenceCursor));
-					nonPrimitiveReferenceCursor.close();
+					Object cachedObject = cache.get(field.getType(), nonPrimitiveReferenceId);
+					if(cachedObject != null){
+						field.set(newObj, shallowCopy(cachedObject));
+					}else{
+						String nonPrimitiveReferenceSQLStatement = DataUtil.getIdField(field.getType()).getName() + " = " + nonPrimitiveReferenceId;
+						Cursor nonPrimitiveReferenceCursor = db.query(field.getType().getSimpleName(), null, nonPrimitiveReferenceSQLStatement, null, null, null, null);
+						nonPrimitiveReferenceCursor.moveToFirst();
+						field.set(newObj, fetch(field.getType(), nonPrimitiveReferenceCursor));
+						nonPrimitiveReferenceCursor.close();
+					}
 				}
 			}
 
@@ -347,11 +347,16 @@ public class PersistenceContext {
 						Collection newCollection = (Collection) field.getType().newInstance();
 						while(!collectionReferenceCursor.isAfterLast()){
 							int containedObjId = collectionReferenceCursor.getInt(collectionReferenceCursor.getColumnIndex(containedClass.getSimpleName()));
-							String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
-							Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
-							containedObjCursor.moveToFirst();
-							newCollection.add(fetch(containedClass, containedObjCursor));
-							collectionReferenceCursor.moveToNext();
+							Object cachedObject = cache.get(containedClass, containedObjId);
+							if(cachedObject != null){
+								newCollection.add(shallowCopy(cachedObject));
+							}else{
+								String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
+								Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
+								containedObjCursor.moveToFirst();
+								newCollection.add(fetch(containedClass, containedObjCursor));
+								collectionReferenceCursor.moveToNext();
+							}
 						}
 						field.set(newObj, newCollection);
 						collectionReferenceCursor.close();
@@ -368,35 +373,65 @@ public class PersistenceContext {
 		}
 	}
 
+	public <T> T shallowCopy(T instance){
+		return shallowCopy(instance, new Cache());
+	}
+
 	@SuppressWarnings({ "unchecked" })
-	public <T> T shallowCopy(T instance) {
+	public <T> T shallowCopy(T instance, Cache previosulyClonedObjects){
 		if(instance == null) return null;
-		try {
+		try{
+			Queue<Field> nonPrimitveFieldQueue = new LinkedList<Field>();
+			Queue<Field> nonPrimitveCollectionFieldQueue = new LinkedList<Field>();
+
 			Class<T> instanceType = (Class<T>) instance.getClass();
-			Field[] typeFields = DataUtil.removeFinalFields(instanceType.getDeclaredFields());
+			Field[] typeFields = DataUtil.getFields(instanceType);
+
+			Object previouslyClonedObject = previosulyClonedObjects.get(instanceType, DataUtil.getId(instance));
+			if(previouslyClonedObject != null) return (T) previouslyClonedObject;
+
 			T newInstance = instanceType.newInstance();
 
-			Object instanceValue;
-			for (Field typeField : typeFields) {
-				if (DataUtil.getFieldTypeId(typeField) == DataUtil.FIELD_TYPE_COLLECTION) {
-					if(typeField.get(instance) == null){
-						typeField.set(newInstance, null);
-					}else{
-						Collection<Object> newCollection = (Collection<Object>) typeField.getType().newInstance();
-						for (Object containedObj : (Collection<?>) typeField.get(instance)) {
-							newCollection.add(shallowCopy(containedObj));
-						}
-						typeField.set(newInstance, newCollection);
-					}
-				}else if(DataUtil.getFieldTypeId(typeField) == DataUtil.FIELD_TYPE_NON_PRIMITIVE){
-					typeField.set(newInstance, shallowCopy(typeField.get(instance)));
-				}else{
-					instanceValue = typeField.get(instance);
-					typeField.set(newInstance, instanceValue);
+			for(Field typeField : typeFields){
+				switch(DataUtil.getFieldTypeId(typeField)){
+				case DataUtil.FIELD_TYPE_INT:
+				case DataUtil.FIELD_TYPE_DOUBLE:
+				case DataUtil.FIELD_TYPE_FLOAT:
+				case DataUtil.FIELD_TYPE_LONG:
+				case DataUtil.FIELD_TYPE_STRING:
+				case DataUtil.FIELD_TYPE_BOOLEAN:
+					typeField.set(newInstance, typeField.get(instance));
+					break;
+				case DataUtil.FIELD_TYPE_NON_PRIMITIVE:
+					nonPrimitveFieldQueue.offer(typeField);
+
+					break;
+				case DataUtil.FIELD_TYPE_COLLECTION:
+					nonPrimitveCollectionFieldQueue.offer(typeField);
+
 				}
 			}
+
+			previosulyClonedObjects.put(newInstance);
+
+			for(Field typeField : nonPrimitveFieldQueue){
+				typeField.set(newInstance, shallowCopy(typeField.get(instance), previosulyClonedObjects));
+			}
+
+			for(Field typeField : nonPrimitveCollectionFieldQueue){
+				if(typeField.get(instance) == null){
+					typeField.set(newInstance, null);
+				}else{
+					Collection<Object> newCollection = (Collection<Object>) typeField.getType().newInstance();
+					for (Object containedObj : (Collection<?>) typeField.get(instance)) {
+						newCollection.add(shallowCopy(containedObj, previosulyClonedObjects));
+					}
+					typeField.set(newInstance, newCollection);
+				}
+				break;
+			}
 			return newInstance;
-		} catch (Exception e) {
+		}catch (Exception e) {
 			throw new InstanceCloneFailedException();
 		} 
 	}

@@ -17,12 +17,12 @@ public class TestActivity extends Activity {
 		DataManager dm = new DataManager(this);
 		Debugger debugger = new Debugger(dm);
 		ArrayList<Class<?>> storedClasses = new ArrayList<Class<?>>();
-		storedClasses.add(DataSample.class);
+		storedClasses.add(CircularSample.class);
 		dm.open();
 		
-		DataSample ds = dm.get(DataSample.class, 1);
-		ds.getDs2().get(0).setNum2(3.14);
-		dm.update(ds);
+		CircularSample cs = dm.get(CircularSample.class, 3);
+		cs.setCs(cs);
+		dm.update(cs);
 		
 		dm.commit();
 		String debug = debugger.printTable(storedClasses) + "\n\n" + debugger.printCache();

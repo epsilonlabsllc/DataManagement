@@ -9,10 +9,8 @@ import net.epsilonlabs.datamanagementefficient.directive.DeleteReferenceDirectiv
 import net.epsilonlabs.datamanagementefficient.directive.Directive;
 import net.epsilonlabs.datamanagementefficient.directive.UpdateDirective;
 import net.epsilonlabs.datamanagementefficient.exception.DatabaseNotOpenExpection;
-
 import android.content.Context;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
 public class DataManager {
@@ -78,20 +76,9 @@ public class DataManager {
 	@SuppressWarnings("unchecked")
 	public <T> T get(Class<T> cls, int id){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
-		T object = (T) pc.getFromCache(cls, id);
-		if(object != null) return object;
-		String tableName = cls.getSimpleName();
-		String SQLSelectionStatement = DataUtil.getIdField(cls).getName() + " = " + String.valueOf(id);
-		Cursor cursor = null;
-		try{
-			cursor = db.query(tableName, null, SQLSelectionStatement, null, null, null, null);
-		}catch(SQLException e){
-			return null;
-		}
-		if(!cursor.moveToFirst()) return null;
-		object = pm.fetch(cls, cursor);
-		cursor.close();
-		return object;
+		Object object = pc.getFromCache(cls, id);
+		if(object != null) return (T) object;
+		return (T) pc.fetchToCache(cls, id);
 	}
 	
 	public <T> int size(Class<T> cls){
