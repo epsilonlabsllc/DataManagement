@@ -15,6 +15,8 @@ import android.database.sqlite.SQLiteDatabase;
 
 public class PersistenceManager {
 
+	public static final String PARENT_REFERENCE_NAME = "parent";
+	public static final String CHILD_REFERENCE_NAME = "child";
 	private SQLiteDatabase db;
 
 	public PersistenceManager(SQLiteDatabase db){
@@ -122,9 +124,9 @@ public class PersistenceManager {
 		int childValue = drd.getChildId();
 		String tableName = parentName + "_" + childName;
 
-		executeCreateIfNotExistsSQLStatement(tableName, createReferenceTableSQLStatements(parentName, childName));
+		executeCreateReferenceTableStatement(tableName);
 
-		String SQLSelectionString = parentName + " = " + String.valueOf(parentValue) + " AND " + childName + " = " + String.valueOf(childValue);
+		String SQLSelectionString = PARENT_REFERENCE_NAME + " = " + String.valueOf(parentValue) + " AND " + CHILD_REFERENCE_NAME + " = " + String.valueOf(childValue);
 		db.delete(tableName, SQLSelectionString, null);
 	}
 
@@ -135,12 +137,17 @@ public class PersistenceManager {
 		int childValue = crd.getChildId();
 		String tableName = parentName + "_" + childName;
 
-		executeCreateIfNotExistsSQLStatement(tableName, createReferenceTableSQLStatements(parentName, childName));
+		executeCreateReferenceTableStatement(tableName);
 
 		ContentValues cv = new ContentValues();
-		cv.put(parentName, parentValue);
-		cv.put(childName, childValue);
+		cv.put(PARENT_REFERENCE_NAME, parentValue);
+		cv.put(CHILD_REFERENCE_NAME, childValue);
 		db.insert(tableName, null, cv);
+	}
+	
+	private void executeCreateReferenceTableStatement(String tableName){
+		String createStatement = "CREATE TABLE IF NOT EXISTS " + tableName + "(" + PARENT_REFERENCE_NAME + " " + DataUtil.INT_FIELD + ", " + CHILD_REFERENCE_NAME + " " + DataUtil.INT_FIELD + ");";
+		db.execSQL(createStatement);
 	}
 	
 	private void executeCreateIfNotExistsSQLStatement(String tableName, ArrayList<String> createStrings) {
@@ -152,13 +159,6 @@ public class PersistenceManager {
 				createStatement += createStrings.get(i) + ");";
 		}
 		db.execSQL(createStatement);
-	}
-
-	private ArrayList<String> createReferenceTableSQLStatements(String parentTypeName, String childTypeName) {
-		ArrayList<String> stringList = new ArrayList<String>();
-		stringList.add(parentTypeName + " " + DataUtil.INT_FIELD);
-		stringList.add(childTypeName + " " + DataUtil.INT_FIELD);
-		return stringList;
 	}
 
 	private ArrayList<String> createSQLStatementsFromFields(Field[] fields) {

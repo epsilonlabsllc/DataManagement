@@ -9,7 +9,7 @@ public class CircularSample {
 	private CircularSample cs;
 	
 	public CircularSample(){
-		this.cs = null;
+		this.cs = this;
 	}
 	
 	public CircularSample getCs(){

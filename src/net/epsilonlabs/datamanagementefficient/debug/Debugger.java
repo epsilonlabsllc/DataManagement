@@ -3,6 +3,7 @@ package net.epsilonlabs.datamanagementefficient.debug;
 import java.util.ArrayList;
 
 import android.database.Cursor;
+import android.database.SQLException;
 
 import net.epsilonlabs.datamanagementefficient.exception.DatabaseNotOpenExpection;
 import net.epsilonlabs.datamanagementefficient.library.Cache;
@@ -23,8 +24,13 @@ public class Debugger {
 		for(Class<?> cls : classes){
 			tableString += cls.getSimpleName() + "\n";
 			tableString += "================================\n";
-
-			Cursor cursor = dm.getDb().query(cls.getSimpleName(), null, null, null, null, null, null);
+			
+			Cursor cursor = null;
+			try{
+			cursor = dm.getDb().query(cls.getSimpleName(), null, null, null, null, null, null);
+			}catch(SQLException e){
+				return "Table for " + cls.getSimpleName() + " does not exist";
+			}
 			cursor.moveToFirst();
 
 			for(int i=0; i<cursor.getColumnCount(); i++){

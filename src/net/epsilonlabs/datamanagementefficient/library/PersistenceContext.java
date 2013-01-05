@@ -25,6 +25,8 @@ import android.util.SparseArray;
 
 public class PersistenceContext {
 
+	public static final int COLLECTION_EMPTY_VALUE = -1;
+
 	private Cache cache;
 	private Queue<Directive> pendingDirectivesQueue;
 	private Map<Class<?>, Integer> nextIdMap;
@@ -84,9 +86,13 @@ public class PersistenceContext {
 				try{
 					if(field.get(newInstance) != null){
 						Class<?> containedType = DataUtil.getStoredClassOfCollection(field);
-						for(Object containedObject : (Collection<?>)field.get(newInstance)){
-							int containedObjId = create(containedObject);
-							pendingDirectivesQueue.offer(new CreateReferenceDirective(instanceType, containedType, rowId, containedObjId));
+						if(((Collection<?>)field.get(newInstance)).isEmpty()){
+							pendingDirectivesQueue.offer(new CreateReferenceDirective(instanceType, containedType, rowId, COLLECTION_EMPTY_VALUE));
+						}else{
+							for(Object containedObject : (Collection<?>)field.get(newInstance)){
+								int containedObjId = create(containedObject);
+								pendingDirectivesQueue.offer(new CreateReferenceDirective(instanceType, containedType, rowId, containedObjId));
+							}
 						}
 					}
 				}catch(IllegalAccessException e){
@@ -145,7 +151,7 @@ public class PersistenceContext {
 						//had a value before, now is null
 						updateMap.put(field, null);
 						previosulyUpdatedObjects.put(updatedInstance);
-						delete(field.getType(), DataUtil.getId(storedValue), previosulyUpdatedObjects); //TODO: bug on circular objects
+						delete(field.getType(), DataUtil.getId(storedValue), previosulyUpdatedObjects);
 					}else if(storedValue != null && updatedValue != null){
 						//value is being altered (wasn't and will not be null)
 						Field idField = DataUtil.getIdField(storedValue.getClass());
@@ -194,6 +200,10 @@ public class PersistenceContext {
 							int childId = create(updatedObjectsMap.get(key));
 							pendingDirectivesQueue.offer(new CreateReferenceDirective(instanceType, containedType, rowId, childId));
 						}
+					}
+
+					if(((Collection<?>) updatedValue).isEmpty()){
+						pendingDirectivesQueue.offer(new CreateReferenceDirective(instanceType, containedType, rowId, COLLECTION_EMPTY_VALUE));
 					}
 					break;
 				}
@@ -338,31 +348,33 @@ public class PersistenceContext {
 				String containedObjTableName = containedClass.getSimpleName();
 				Field containedObjIdField = DataUtil.getIdField(containedClass);
 				String collectionReferenceTableName = type.getSimpleName() + "_" + containedClass.getSimpleName();
-				String collectionReferenceSQLStatement = type.getSimpleName() + " = " + String.valueOf(rowId);
+				String collectionReferenceSQLStatement = PersistenceManager.PARENT_REFERENCE_NAME + " = " + String.valueOf(rowId);
 				try{
-					Cursor collectionReferenceCursor = db.query(collectionReferenceTableName, new String[]{containedClass.getSimpleName()}, collectionReferenceSQLStatement, null, null, null, null);
+					Cursor collectionReferenceCursor = db.query(collectionReferenceTableName, new String[]{PersistenceManager.CHILD_REFERENCE_NAME}, collectionReferenceSQLStatement, null, null, null, null);
 					if(!collectionReferenceCursor.moveToFirst()){
-						field.set(newObj, field.getType().newInstance());
+						field.set(newObj, null);
 					}else{
 						Collection newCollection = (Collection) field.getType().newInstance();
 						while(!collectionReferenceCursor.isAfterLast()){
-							int containedObjId = collectionReferenceCursor.getInt(collectionReferenceCursor.getColumnIndex(containedClass.getSimpleName()));
-							Object cachedObject = cache.get(containedClass, containedObjId);
-							if(cachedObject != null){
-								newCollection.add(shallowCopy(cachedObject));
-							}else{
-								String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
-								Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
-								containedObjCursor.moveToFirst();
-								newCollection.add(fetch(containedClass, containedObjCursor));
-								collectionReferenceCursor.moveToNext();
+							int containedObjId = collectionReferenceCursor.getInt(collectionReferenceCursor.getColumnIndex(PersistenceManager.CHILD_REFERENCE_NAME));
+							if(containedObjId != COLLECTION_EMPTY_VALUE){
+								Object cachedObject = cache.get(containedClass, containedObjId);
+								if(cachedObject != null){
+									newCollection.add(shallowCopy(cachedObject));
+								}else{
+									String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
+									Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
+									containedObjCursor.moveToFirst();
+									newCollection.add(fetch(containedClass, containedObjCursor));
+								}
 							}
+							collectionReferenceCursor.moveToNext();
 						}
 						field.set(newObj, newCollection);
 						collectionReferenceCursor.close();
 					}
 				}catch(SQLException e){
-					field.set(newObj, field.getType().newInstance());
+					field.set(newObj, null);
 				}
 			}
 			return newObj;
