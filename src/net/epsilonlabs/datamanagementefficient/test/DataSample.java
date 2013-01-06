@@ -9,20 +9,20 @@ public class DataSample{
 	@Id
 	private int ident;
 	private int num1;
-	private double num2;
+	private double numderp;
 	private String num3;
 	private boolean num4;
 	public static final int num5 = 3;
-	private ArrayList<DataSample2> ds2;
+	private ArrayList<DataSample2> ds2depier;
 
 	public DataSample(){
 		num1 = 3;
-		num2 = 3.0;
+		numderp = 3.0;
 		num3 = "three";
 		num4 = true;
-		ds2 = new ArrayList<DataSample2>();
-		ds2.add(new DataSample2());
-		ds2.add(new DataSample2());
+		ds2depier = new ArrayList<DataSample2>();
+		ds2depier.add(new DataSample2());
+		ds2depier.add(new DataSample2());
 	}
 
 	public int getNum1() {
@@ -33,12 +33,12 @@ public class DataSample{
 		this.num1 = num1;
 	}
 
-	public double getNum2() {
-		return num2;
+	public double getNumDERP() {
+		return numderp;
 	}
 
-	public void setNum2(double num2) {
-		this.num2 = num2;
+	public void setNum2(double numDERP) {
+		this.numderp = numDERP;
 	}
 
 	public String getNum3() {
@@ -66,23 +66,23 @@ public class DataSample{
 	}
 
 	public ArrayList<DataSample2> getDs2() {
-		return ds2;
+		return ds2depier;
 	}
 
 	public void setDs2(ArrayList<DataSample2> ds2) {
-		this.ds2 = ds2;
+		this.ds2depier = ds2;
 	}
 
 	public String toString(){
-		if(ds2 != null){
-			String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4 + "\n";
-			for(DataSample2 containedDs2 : ds2){
+		if(ds2depier != null){
+			String string =  ident + " " + num1 + " " + numderp + " " + num3 + " " + num4 + "\n";
+			for(DataSample2 containedDs2 : ds2depier){
 				string += "     " + containedDs2.toString() + "\n";
 			}
 			return string;
 		}
 		
-		String string =  ident + " " + num1 + " " + num2 + " " + num3 + " " + num4 + "\n";
+		String string =  ident + " " + num1 + " " + numderp + " " + num3 + " " + num4 + "\n";
 		string += "     " + " null " + "\n";
 		return string;
 	}

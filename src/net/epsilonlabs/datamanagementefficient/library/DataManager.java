@@ -14,29 +14,40 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 public class DataManager {
-	private SQLHelper helper;
+	
+	private static DataManager instance;
+	
+
 	private SQLiteDatabase db = null;
 	private PersistenceContext pc = null;
 	private PersistenceManager pm = null;
 	private boolean isOpen = false;
+	private SQLHelper helper;
 	
-	public DataManager(Context context){
+	public static DataManager getInstance(Context context) {
+		if (instance == null) {
+			instance = new DataManager(context);
+		}
+		return instance;
+	}
+
+	private DataManager(Context context){
 		this.helper = new SQLHelper(context);
 	}
-	
+
 	public void open(){
 		db = helper.getWritableDatabase();
-		pc = new PersistenceContext(db);
 		pm = new PersistenceManager(db);
+		pc = new PersistenceContext(pm);
 		isOpen = true;
 	}
-	
+
 	public void close(){
 		commit();
 		db.close();
 		isOpen = false;
 	}
-	
+
 	public void commit(){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
 		Queue<Directive> pendingDirectives = pc.getPendingDirectivesQueue();
@@ -61,18 +72,18 @@ public class DataManager {
 		pc.create(obj);
 		return DataUtil.getId(obj);
 	}
-	
+
 	public void delete(Class<?> cls, int id){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
 		pc.delete(cls, id);
 	}
-	
+
 	public <T> void update(T obj){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
 		if(obj == null) throw new NullPointerException();
 		pc.update(obj);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public <T> T get(Class<T> cls, int id){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
@@ -80,13 +91,17 @@ public class DataManager {
 		if(object != null) return (T) object;
 		return (T) pc.fetchToCache(cls, id);
 	}
-	
+
 	public <T> int size(Class<T> cls){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
 		Cursor c = db.query(cls.getSimpleName(), null, null , null, null, null, null);
 		int size = c.getCount();
 		c.close();
 		return size;
+	}
+	
+	public void setDefaultUpgradeValue(int value){
+		pm.setDefaultUpgradeValue(value);
 	}
 
 	public SQLiteDatabase getDb() {
@@ -96,7 +111,7 @@ public class DataManager {
 	public PersistenceContext getPc() {
 		return pc;
 	}
-	
+
 	public boolean isOpen(){
 		return isOpen;
 	}

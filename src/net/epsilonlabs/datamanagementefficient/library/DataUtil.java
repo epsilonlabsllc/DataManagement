@@ -4,11 +4,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import net.epsilonlabs.datamanagementefficient.annotations.Id;
 import net.epsilonlabs.datamanagementefficient.exception.IdFieldDoesNotExistException;
 import net.epsilonlabs.datamanagementefficient.exception.IdFieldIsInaccessibleException;
 import net.epsilonlabs.datamanagementefficient.exception.IdFieldIsNotIntException;
+import net.epsilonlabs.datamanagementefficient.exception.InstanceCloneFailedException;
 
 /**
  * This class contains values and methods that are used by several classes in this library. All variables and methods are public and static.
@@ -120,5 +123,68 @@ public class DataUtil {
 	public static Class<?> getStoredClassOfCollection(Field field){
 		ParameterizedType listType = (ParameterizedType) field.getGenericType();
 		return (Class<?>) listType.getActualTypeArguments()[0];
+	}
+	
+	public static <T> T shallowCopy(T instance){
+		return shallowCopy(instance, new Cache());
+	}
+
+	@SuppressWarnings({ "unchecked" })
+	private static <T> T shallowCopy(T instance, Cache previosulyClonedObjects){
+		if(instance == null) return null;
+		try{
+			Queue<Field> nonPrimitveFieldQueue = new LinkedList<Field>();
+			Queue<Field> nonPrimitveCollectionFieldQueue = new LinkedList<Field>();
+
+			Class<T> instanceType = (Class<T>) instance.getClass();
+			Field[] typeFields = DataUtil.getFields(instanceType);
+
+			Object previouslyClonedObject = previosulyClonedObjects.get(instanceType, DataUtil.getId(instance));
+			if(previouslyClonedObject != null) return (T) previouslyClonedObject;
+
+			T newInstance = instanceType.newInstance();
+
+			for(Field typeField : typeFields){
+				switch(DataUtil.getFieldTypeId(typeField)){
+				case DataUtil.FIELD_TYPE_INT:
+				case DataUtil.FIELD_TYPE_DOUBLE:
+				case DataUtil.FIELD_TYPE_FLOAT:
+				case DataUtil.FIELD_TYPE_LONG:
+				case DataUtil.FIELD_TYPE_STRING:
+				case DataUtil.FIELD_TYPE_BOOLEAN:
+					typeField.set(newInstance, typeField.get(instance));
+					break;
+				case DataUtil.FIELD_TYPE_NON_PRIMITIVE:
+					nonPrimitveFieldQueue.offer(typeField);
+
+					break;
+				case DataUtil.FIELD_TYPE_COLLECTION:
+					nonPrimitveCollectionFieldQueue.offer(typeField);
+
+				}
+			}
+
+			previosulyClonedObjects.put(newInstance);
+
+			for(Field typeField : nonPrimitveFieldQueue){
+				typeField.set(newInstance, shallowCopy(typeField.get(instance), previosulyClonedObjects));
+			}
+
+			for(Field typeField : nonPrimitveCollectionFieldQueue){
+				if(typeField.get(instance) == null){
+					typeField.set(newInstance, null);
+				}else{
+					Collection<Object> newCollection = (Collection<Object>) typeField.getType().newInstance();
+					for (Object containedObj : (Collection<?>) typeField.get(instance)) {
+						newCollection.add(shallowCopy(containedObj, previosulyClonedObjects));
+					}
+					typeField.set(newInstance, newCollection);
+				}
+				break;
+			}
+			return newInstance;
+		}catch (Exception e) {
+			throw new InstanceCloneFailedException();
+		} 
 	}
 }

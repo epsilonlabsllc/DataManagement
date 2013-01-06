@@ -14,15 +14,14 @@ public class TestActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		TextView tv = new TextView(this);
-		DataManager dm = new DataManager(this);
+		DataManager dm = DataManager.getInstance(this);
 		Debugger debugger = new Debugger(dm);
 		ArrayList<Class<?>> storedClasses = new ArrayList<Class<?>>();
-		storedClasses.add(CircularSample2.class);
+		storedClasses.add(DataSample.class);
 		dm.open();
 		
-//		dm.add(new CircularSample2());
-		CircularSample2 ds = dm.get(CircularSample2.class, 1);
-		dm.update(ds);
+//		dm.add(new DataSample());
+		DataSample ds = dm.get(DataSample.class, 1);
 		
 		dm.commit();
 		String debug = debugger.printTable(storedClasses) + "\n\n" + debugger.printCache();
