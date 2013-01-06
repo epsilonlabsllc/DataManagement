@@ -17,7 +17,6 @@ public class DataManager {
 	
 	private static DataManager instance;
 	
-
 	private SQLiteDatabase db = null;
 	private PersistenceContext pc = null;
 	private PersistenceManager pm = null;
@@ -98,6 +97,10 @@ public class DataManager {
 		int size = c.getCount();
 		c.close();
 		return size;
+	}
+	
+	public void dropRecords(String recordName){
+		db.execSQL("DROP TABLE " + recordName + ";");
 	}
 	
 	public void setDefaultUpgradeValue(int value){
