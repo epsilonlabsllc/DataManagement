@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Data Management : Android Local Database Library for Easily Storing Objects" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Data Management</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/logmein3546/DataManagement">View on GitHub</a>
+
+          <h1 id="project_title">Data Management</h1>
+          <h2 id="project_tagline">Android Local Database Library for Easily Storing Objects</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/logmein3546/DataManagement/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/logmein3546/DataManagement/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>Data Management is a Java Android library designed to help easily and efficiently store aggregate classes to an SQLite database.  It eliminates the need to write separate classes to manage database – object interactions and allows developers to use simple methods to store, query, update, and delete objects. The library is capable of storing all objects of classes whose instance variables are either primitive data types or are themselves objects of another storable class.
+The DataManagement Library condenses many standard database features into several simple methods:</p>
+
+<h2>Examples:</h2>
+
+<h3>Creating a Storable Class:</h3>
+
+<pre><code>public class StorableClass{
+    @Id
+    private int ident;
+    private int num1;
+    private double num2;
+    private String num3;
+    private boolean num4;
+    public static final int num5 = 3;
+    private OtherStorableClass[] ds2;
+}
+</code></pre>
+
+<p>A storable class must meet two requirements. First, the class must have a private instance variable of type int that will be used as the id number of the object. This variable may be read by the application, but the application should not have the capability to write to or change this variable in anyway. This variable is identified by the system with an <a href="https://github.com/Id" class="user-mention">@Id</a> annotation. In addition, the class should not have any instance variables that are not either primitive types, strings, or other storable objects.</p>
+
+<h3>Instantiating a DataManager Object:</h3>
+
+<pre><code>DataManager dm = new DataManager(context);
+</code></pre>
+
+<p>The open method accepts the calling Context that is going to use the database. Usually this should be the calling Activity.</p>
+
+<h3>Opening a Database for Use:</h3>
+
+<pre><code>dm.open();
+</code></pre>
+
+<p>This method must be called before the database is used in any way.</p>
+
+<h3>Closing a Database After Use:</h3>
+
+<pre><code>dm.close();
+</code></pre>
+
+<p>This method should be called after all database operations have been performed.</p>
+
+<h3>Adding an Object to the Database:</h3>
+
+<pre><code>int id = dm.add(new StorableClass());
+</code></pre>
+
+<p>The add method accepts an object of a storable class as its only parameter and adds it to the database. It returns its id in the database for future use.</p>
+
+<h3>Retrieving a Specific Item from the Database by ID:</h3>
+
+<pre><code>StorableClass storableObject = dm.get(StorableClass.class, id);
+</code></pre>
+
+<p>The get method accepts two parameters: the data type of the stored object and the Id number of the object (the return value of the add method).</p>
+
+<h3>Retrieving All Objects of a Given Type Stored in the Database as a Collection:</h3>
+
+<pre><code>storableObjectCollection = dm.getAll(StorableClass.class);
+</code></pre>
+
+<p>The getAll method’s only parameter is the class of the objects that should be retrieved.</p>
+
+<h3>Retrieving a Collection of Storable Objects that match a given criteria:</h3>
+
+<pre><code>Collection&lt;StorableClass&gt; storableObjectCollection = dm.find(StorableClass.class, 5, "num1");
+</code></pre>
+
+<p>The find method accepts three parameters: the data type of the stored object, the value that is being searched for, and the name of the instance variable as a string. This method is overloaded in such a way that the second parameter may be any primitive value or a string.</p>
+
+<h3>Updating an Object in the Database:</h3>
+
+<pre><code>dm.update(id, updatedObject);
+</code></pre>
+
+<p>The update method accepts two parameters: The id number of the object being updated and the updated object that will replace the existing one I the database. If the id number of the new object and the id number given as the first parameter do not match, the object’s id will be overwritten.</p>
+
+<h3>Deleting an Object by its Id number:</h3>
+
+<pre><code>dm.delete(StorableClass.class, id);
+</code></pre>
+
+<p>The delete method accepts two parameters: The data type and id number of the object to be deleted.</p>
+
+<h2>Additional Notes:</h2>
+
+<p>Id numbers are used by the database to ensure that objects are put in the correct place and to allow the program to access these objects. It is important that programs using this library do not attempt to set these variables as they will be initialized and managed by the library. These id numbers are unique for objects of a given type; objects of different types may have the same id number. In addition, if objects are deleted from the database their id numbers are left empty and are not reused.</p>
+
+<h2>Licensing:</h2>
+
+<p>DataManagement is Currently Licensed under the GNU General Public License, version 3 (GPL-3.0). It is intended for open source use by anyone who would like to use it.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Data Management maintained by <a href="https://github.com/logmein3546">logmein3546</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
