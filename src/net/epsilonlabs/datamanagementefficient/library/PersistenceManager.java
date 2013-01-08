@@ -42,8 +42,10 @@ public class PersistenceManager {
 			Field idField = DataUtil.getIdField(type);
 			Field[] instanceFields = DataUtil.getFields(type);
 
-			executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
-			performTableUpgradeIfNeeded(type);
+			if(!upToDateClasses.contains(type)){
+				executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
+				performTableUpgradeIfNeeded(type);
+			}
 
 			int rowId = (int) db.insert(tableName, idField.getName(), null);
 			ContentValues cv = new ContentValues();
@@ -85,8 +87,12 @@ public class PersistenceManager {
 		int rowId = dd.getRowId();
 		String tableName = type.getSimpleName();
 		Field idField = DataUtil.getIdField(type);
-		executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
-		performTableUpgradeIfNeeded(type);
+
+		if(!upToDateClasses.contains(type)){
+			executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
+			performTableUpgradeIfNeeded(type);
+		}
+
 		db.delete(tableName, idField.getName() + " = " + rowId, null);
 	}
 
@@ -96,8 +102,11 @@ public class PersistenceManager {
 		int rowId = ud.getRowId();
 		String tableName = type.getSimpleName();
 		Field idField = DataUtil.getIdField(type);
-		executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
-		performTableUpgradeIfNeeded(type);
+
+		if(!upToDateClasses.contains(type)){
+			executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
+			performTableUpgradeIfNeeded(type);
+		}
 
 		ContentValues cv = new ContentValues();
 		for (Field field : fieldValueMap.keySet()) {
@@ -137,8 +146,11 @@ public class PersistenceManager {
 	private <T> T fetch(Class<T> type, Cursor cursor, Cache cache){
 		Queue<Field> nonPrimitveFieldQueue = new LinkedList<Field>();
 		Queue<Field> nonPrimitveCollectionFieldQueue = new LinkedList<Field>();
-		executeCreateIfNotExistsSQLStatement(type.getSimpleName(), createSQLStatementsFromFields(DataUtil.getFields(type)));
-		performTableUpgradeIfNeeded(type);
+
+		if(!upToDateClasses.contains(type)){
+			executeCreateIfNotExistsSQLStatement(type.getSimpleName(), createSQLStatementsFromFields(DataUtil.getFields(type)));
+			performTableUpgradeIfNeeded(type);
+		}
 
 		try{
 			T newObj = type.newInstance();
@@ -287,84 +299,82 @@ public class PersistenceManager {
 	}
 
 	private void performTableUpgradeIfNeeded(Class<?> cls){
-		if(!upToDateClasses.contains(cls)){
-			upToDateClasses.add(cls);
+		upToDateClasses.add(cls);
 
-			HashSet<String> existingNonCollectionFieldList = new HashSet<String>();
-			HashSet<String> newNonCollectionFieldList = new HashSet<String>();
-			HashSet<String> existingCollectionFieldList = new HashSet<String>();
-			HashSet<String> newCollectionFieldList = new HashSet<String>();
+		HashSet<String> existingNonCollectionFieldList = new HashSet<String>();
+		HashSet<String> newNonCollectionFieldList = new HashSet<String>();
+		HashSet<String> existingCollectionFieldList = new HashSet<String>();
+		HashSet<String> newCollectionFieldList = new HashSet<String>();
 
-			Cursor cursor = db.rawQuery("PRAGMA table_info(" + cls.getSimpleName() + ")", null);
-			cursor.moveToFirst();
-			while(!cursor.isAfterLast()){
-				existingNonCollectionFieldList.add(cursor.getString(1));
-				cursor.moveToNext();
+		Cursor cursor = db.rawQuery("PRAGMA table_info(" + cls.getSimpleName() + ")", null);
+		cursor.moveToFirst();
+		while(!cursor.isAfterLast()){
+			existingNonCollectionFieldList.add(cursor.getString(1));
+			cursor.moveToNext();
+		}
+		cursor.close();
+
+		Cursor collectionReferenceCursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
+		collectionReferenceCursor.moveToFirst();
+		while (!collectionReferenceCursor.isAfterLast()){
+			String tableName = collectionReferenceCursor.getString(collectionReferenceCursor.getColumnIndex("name"));
+			if(tableName.startsWith(cls.getSimpleName() + "_")){
+				String collectionName = tableName.split("_")[1];
+				existingCollectionFieldList.add(collectionName);
 			}
-			cursor.close();
+			collectionReferenceCursor.moveToNext();
+		}
+		collectionReferenceCursor.close();
 
-			Cursor collectionReferenceCursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
-			collectionReferenceCursor.moveToFirst();
-			while (!collectionReferenceCursor.isAfterLast()){
-				String tableName = collectionReferenceCursor.getString(collectionReferenceCursor.getColumnIndex("name"));
-				if(tableName.startsWith(cls.getSimpleName() + "_")){
-					String collectionName = tableName.split("_")[1];
-					existingCollectionFieldList.add(collectionName);
-				}
-				collectionReferenceCursor.moveToNext();
+		Field[] newFields = DataUtil.getFields(cls);
+		for(Field field : newFields){
+			switch(DataUtil.getFieldTypeId(field)){
+			case DataUtil.FIELD_TYPE_INT:
+			case DataUtil.FIELD_TYPE_DOUBLE:
+			case DataUtil.FIELD_TYPE_FLOAT:
+			case DataUtil.FIELD_TYPE_LONG:
+			case DataUtil.FIELD_TYPE_STRING:
+			case DataUtil.FIELD_TYPE_BOOLEAN:
+				newNonCollectionFieldList.add(field.getName());
+				break;
+			case DataUtil.FIELD_TYPE_NON_PRIMITIVE:
+				newNonCollectionFieldList.add(field.getName() + "_ref");
+				break;
+			case DataUtil.FIELD_TYPE_COLLECTION:
+				newCollectionFieldList.add(field.getName());
+				break;
 			}
-			collectionReferenceCursor.close();
+		}
 
-			Field[] newFields = DataUtil.getFields(cls);
-			for(Field field : newFields){
-				switch(DataUtil.getFieldTypeId(field)){
-				case DataUtil.FIELD_TYPE_INT:
-				case DataUtil.FIELD_TYPE_DOUBLE:
-				case DataUtil.FIELD_TYPE_FLOAT:
-				case DataUtil.FIELD_TYPE_LONG:
-				case DataUtil.FIELD_TYPE_STRING:
-				case DataUtil.FIELD_TYPE_BOOLEAN:
-					newNonCollectionFieldList.add(field.getName());
-					break;
-				case DataUtil.FIELD_TYPE_NON_PRIMITIVE:
-					newNonCollectionFieldList.add(field.getName() + "_ref");
-					break;
-				case DataUtil.FIELD_TYPE_COLLECTION:
-					newCollectionFieldList.add(field.getName());
-					break;
-				}
+		if(!existingNonCollectionFieldList.containsAll(newNonCollectionFieldList) || !newNonCollectionFieldList.containsAll(existingNonCollectionFieldList)){
+			LinkedList<String> sharedNonCollectionColumns = new LinkedList<String>();
+			for(String existingField : existingNonCollectionFieldList){
+				if(newNonCollectionFieldList.contains(existingField)) sharedNonCollectionColumns.add(existingField);
 			}
-			
-			if(!existingNonCollectionFieldList.containsAll(newNonCollectionFieldList) || !newNonCollectionFieldList.containsAll(existingNonCollectionFieldList)){
-				LinkedList<String> sharedNonCollectionColumns = new LinkedList<String>();
-				for(String existingField : existingNonCollectionFieldList){
-					if(newNonCollectionFieldList.contains(existingField)) sharedNonCollectionColumns.add(existingField);
-				}
 
-				String tableName = cls.getSimpleName();
-				executeCreateIfNotExistsSQLStatement(tableName + "_backup", createSQLStatementsFromFields(DataUtil.getFields(cls)));
-				
-				String SQLCopyStatement = "INSERT INTO " + tableName + "_backup (";
-				String SQLCopyFields = "";
-				for(int i=0; i<sharedNonCollectionColumns.size(); i++){
-					if(i != sharedNonCollectionColumns.size()-1) SQLCopyFields += sharedNonCollectionColumns.get(i) + ", ";
-					else SQLCopyFields += sharedNonCollectionColumns.get(i);
-				}
-				SQLCopyStatement += SQLCopyFields + ") SELECT " + SQLCopyFields;
-				SQLCopyStatement += " FROM " + tableName + ";";
-				db.execSQL(SQLCopyStatement);			
-				
-				db.execSQL("DROP TABLE " + tableName + ";");
-				db.execSQL("ALTER TABLE " + tableName + "_backup " + "RENAME TO " + tableName + ";");
-				
+			String tableName = cls.getSimpleName();
+			executeCreateIfNotExistsSQLStatement(tableName + "_backup", createSQLStatementsFromFields(DataUtil.getFields(cls)));
+
+			String SQLCopyStatement = "INSERT INTO " + tableName + "_backup (";
+			String SQLCopyFields = "";
+			for(int i=0; i<sharedNonCollectionColumns.size(); i++){
+				if(i != sharedNonCollectionColumns.size()-1) SQLCopyFields += sharedNonCollectionColumns.get(i) + ", ";
+				else SQLCopyFields += sharedNonCollectionColumns.get(i);
 			}
-			
-			if(!newCollectionFieldList.containsAll(existingCollectionFieldList)){
-				String tableName = cls.getSimpleName();
-				for(String existingCollectionName : existingCollectionFieldList){
-					if(!newCollectionFieldList.contains(existingCollectionName)){
-						db.execSQL("DROP TABLE " + tableName + "_" + existingCollectionName + ";");
-					}
+			SQLCopyStatement += SQLCopyFields + ") SELECT " + SQLCopyFields;
+			SQLCopyStatement += " FROM " + tableName + ";";
+			db.execSQL(SQLCopyStatement);			
+
+			db.execSQL("DROP TABLE " + tableName + ";");
+			db.execSQL("ALTER TABLE " + tableName + "_backup " + "RENAME TO " + tableName + ";");
+
+		}
+
+		if(!newCollectionFieldList.containsAll(existingCollectionFieldList)){
+			String tableName = cls.getSimpleName();
+			for(String existingCollectionName : existingCollectionFieldList){
+				if(!newCollectionFieldList.contains(existingCollectionName)){
+					db.execSQL("DROP TABLE " + tableName + "_" + existingCollectionName + ";");
 				}
 			}
 		}
