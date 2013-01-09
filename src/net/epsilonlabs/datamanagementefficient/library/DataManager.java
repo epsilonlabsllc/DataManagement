@@ -114,8 +114,8 @@ public class DataManager {
 				T object = pc.getFromCache(cls, id);
 				if(object != null) list.add(object);
 				list.add(pc.fetchToCache(cls, cursor));
-				cursor.moveToNext();
 			}
+			cursor.moveToNext();
 		}
 		cursor.close();
 		return list;
