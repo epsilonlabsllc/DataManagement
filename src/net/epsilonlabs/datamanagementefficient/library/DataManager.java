@@ -103,7 +103,7 @@ public class DataManager {
 		}
 		Cursor cursor = null;
 		try{
-			cursor = db.query(cls.getSimpleName(), null, null, null, null, null, null);
+			cursor = db.query(DataUtil.getTableName(cls), null, null, null, null, null, null);
 		}catch(SQLException e){
 			return list;
 		}

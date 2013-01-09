@@ -38,7 +38,7 @@ public class PersistenceManager {
 		try {
 			Object obj = cd.getInstance();
 			Class<?> type = obj.getClass();
-			String tableName = type.getSimpleName();
+			String tableName = DataUtil.getTableName(type);
 			Field idField = DataUtil.getIdField(type);
 			Field[] instanceFields = DataUtil.getFields(type);
 
@@ -85,7 +85,7 @@ public class PersistenceManager {
 	public void delete(DeleteDirective dd) {
 		Class<?> type = dd.getCls();
 		int rowId = dd.getRowId();
-		String tableName = type.getSimpleName();
+		String tableName = DataUtil.getTableName(type);;
 		Field idField = DataUtil.getIdField(type);
 
 		if(!upToDateClasses.contains(type)){
@@ -100,7 +100,7 @@ public class PersistenceManager {
 		Class<?> type = ud.getCls();
 		Map<Field, Object> fieldValueMap = ud.getValues();
 		int rowId = ud.getRowId();
-		String tableName = type.getSimpleName();
+		String tableName = DataUtil.getTableName(type);
 		Field idField = DataUtil.getIdField(type);
 
 		if(!upToDateClasses.contains(type)){
@@ -148,7 +148,7 @@ public class PersistenceManager {
 		Queue<Field> nonPrimitveCollectionFieldQueue = new LinkedList<Field>();
 
 		if(!upToDateClasses.contains(type)){
-			executeCreateIfNotExistsSQLStatement(type.getSimpleName(), createSQLStatementsFromFields(DataUtil.getFields(type)));
+			executeCreateIfNotExistsSQLStatement(DataUtil.getTableName(type), createSQLStatementsFromFields(DataUtil.getFields(type)));
 			performTableUpgradeIfNeeded(type);
 		}
 
@@ -204,7 +204,7 @@ public class PersistenceManager {
 						field.set(newObj, DataUtil.shallowCopy(cachedObject));
 					}else{
 						String nonPrimitiveReferenceSQLStatement = DataUtil.getIdField(field.getType()).getName() + " = " + nonPrimitiveReferenceId;
-						Cursor nonPrimitiveReferenceCursor = db.query(field.getType().getSimpleName(), null, nonPrimitiveReferenceSQLStatement, null, null, null, null);
+						Cursor nonPrimitiveReferenceCursor = db.query(DataUtil.getTableName(field.getType()), null, nonPrimitiveReferenceSQLStatement, null, null, null, null);
 						nonPrimitiveReferenceCursor.moveToFirst();
 						field.set(newObj, fetch(field.getType(), nonPrimitiveReferenceCursor, cache));
 						nonPrimitiveReferenceCursor.close();
@@ -215,9 +215,9 @@ public class PersistenceManager {
 			for(Field field : nonPrimitveCollectionFieldQueue){
 				Class<?> containedClass = DataUtil.getStoredClassOfCollection(field);
 				int rowId = idField.getInt(newObj);
-				String containedObjTableName = containedClass.getSimpleName();
+				String containedObjTableName = DataUtil.getTableName(containedClass);
 				Field containedObjIdField = DataUtil.getIdField(containedClass);
-				String collectionReferenceTableName = type.getSimpleName() + "_" + field.getName();
+				String collectionReferenceTableName = DataUtil.getTableName(type) + "_" + field.getName();
 				String collectionReferenceSQLStatement = PARENT_REFERENCE_NAME + " = " + String.valueOf(rowId);
 				try{
 					Cursor collectionReferenceCursor = db.query(collectionReferenceTableName, new String[]{CHILD_REFERENCE_NAME}, collectionReferenceSQLStatement, null, null, null, null);
@@ -256,7 +256,7 @@ public class PersistenceManager {
 	}
 
 	public <T> T fetch(Class<T> cls, int id){
-		String tableName = cls.getSimpleName();
+		String tableName = DataUtil.getTableName(cls);
 		String SQLSelectionStatement = DataUtil.getIdField(cls).getName() + " = " + String.valueOf(id);
 		Cursor cursor = null;
 		try{
@@ -271,7 +271,7 @@ public class PersistenceManager {
 	}
 
 	public void deleteReference(DeleteReferenceDirective drd){
-		String parentName = drd.getParentType().getSimpleName();
+		String parentName = DataUtil.getTableName(drd.getParentType());
 		String childName = drd.getChildName();
 		int parentValue = drd.getParentId();
 		int childValue = drd.getChildId();
@@ -284,7 +284,7 @@ public class PersistenceManager {
 	}
 
 	public void createReference(CreateReferenceDirective crd){
-		String parentName = crd.getParentType().getSimpleName();
+		String parentName = DataUtil.getTableName(crd.getParentType());
 		String childName = crd.getChildName();
 		int parentValue = crd.getParentId();
 		int childValue = crd.getChildId();
@@ -306,7 +306,7 @@ public class PersistenceManager {
 		HashSet<String> existingCollectionFieldList = new HashSet<String>();
 		HashSet<String> newCollectionFieldList = new HashSet<String>();
 
-		Cursor cursor = db.rawQuery("PRAGMA table_info(" + cls.getSimpleName() + ")", null);
+		Cursor cursor = db.rawQuery("PRAGMA table_info(" + DataUtil.getTableName(cls) + ")", null);
 		cursor.moveToFirst();
 		while(!cursor.isAfterLast()){
 			existingNonCollectionFieldList.add(cursor.getString(1));
@@ -318,7 +318,7 @@ public class PersistenceManager {
 		collectionReferenceCursor.moveToFirst();
 		while (!collectionReferenceCursor.isAfterLast()){
 			String tableName = collectionReferenceCursor.getString(collectionReferenceCursor.getColumnIndex("name"));
-			if(tableName.startsWith(cls.getSimpleName() + "_")){
+			if(tableName.startsWith(DataUtil.getTableName(cls) + "_")){
 				String collectionName = tableName.split("_")[1];
 				existingCollectionFieldList.add(collectionName);
 			}
@@ -352,7 +352,7 @@ public class PersistenceManager {
 				if(newNonCollectionFieldList.contains(existingField)) sharedNonCollectionColumns.add(existingField);
 			}
 
-			String tableName = cls.getSimpleName();
+			String tableName = DataUtil.getTableName(cls);
 			executeCreateIfNotExistsSQLStatement(tableName + "_backup", createSQLStatementsFromFields(DataUtil.getFields(cls)));
 
 			String SQLCopyStatement = "INSERT INTO " + tableName + "_backup (";
@@ -371,7 +371,7 @@ public class PersistenceManager {
 		}
 
 		if(!newCollectionFieldList.containsAll(existingCollectionFieldList)){
-			String tableName = cls.getSimpleName();
+			String tableName = DataUtil.getTableName(cls);
 			for(String existingCollectionName : existingCollectionFieldList){
 				if(!newCollectionFieldList.contains(existingCollectionName)){
 					db.execSQL("DROP TABLE " + tableName + "_" + existingCollectionName + ";");
@@ -444,7 +444,7 @@ public class PersistenceManager {
 	public <T> int size(Class<T> cls){
 		Cursor c = null;
 		try{
-			c = db.query(cls.getSimpleName(), null, null , null, null, null, null);
+			c = db.query(DataUtil.getTableName(cls), null, null , null, null, null, null);
 		}catch(SQLException e){
 			return 0;
 		}
@@ -464,7 +464,7 @@ public class PersistenceManager {
 	public int fetchMaxRowId(Class<?> instanceType){
 		int rowId;
 		try{
-			Cursor cursor = db.rawQuery("SELECT MAX(" + DataUtil.getIdField(instanceType).getName() + ") FROM " + instanceType.getSimpleName(), null);
+			Cursor cursor = db.rawQuery("SELECT MAX(" + DataUtil.getIdField(instanceType).getName() + ") FROM " + DataUtil.getTableName(instanceType), null);
 			if (!cursor.moveToFirst()) rowId = 1;
 			else rowId = cursor.getInt(0) + 1;
 			cursor.close();

@@ -128,6 +128,10 @@ public class DataUtil {
 	public static <T> T shallowCopy(T instance){
 		return shallowCopy(instance, new Cache());
 	}
+	
+	public static String getTableName(Class<?> cls){
+		return cls.getCanonicalName().replace(".", "_");
+	}
 
 	@SuppressWarnings({ "unchecked" })
 	private static <T> T shallowCopy(T instance, Cache previosulyClonedObjects){
