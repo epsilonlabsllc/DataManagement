@@ -11,18 +11,21 @@ import net.epsilonlabs.datamanagementefficient.directive.Directive;
 import net.epsilonlabs.datamanagementefficient.directive.UpdateDirective;
 import net.epsilonlabs.datamanagementefficient.exception.DatabaseNotOpenExpection;
 import android.content.Context;
+import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.SparseArray;
 
 public class DataManager {
-	
+
 	private static DataManager instance;
-	
+
 	private SQLiteDatabase db = null;
 	private PersistenceContext pc = null;
 	private PersistenceManager pm = null;
 	private boolean isOpen = false;
 	private SQLHelper helper;
-	
+
 	public static DataManager getInstance(Context context) {
 		if (instance == null) {
 			instance = new DataManager(context);
@@ -89,22 +92,43 @@ public class DataManager {
 		if(object != null) return object;
 		return pc.fetchToCache(cls, id);
 	}
-	
-	//TODO: is this too inefficient? gets directly from database
-	//other methods would have to query the database to find the list off all stored objects
+
 	public <T> ArrayList<T> getAll(Class<T> cls){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
-		return pm.fetchSelection(cls, null);
+		ArrayList<T> list = new ArrayList<T>();
+
+		SparseArray<T> cachedObjects = pc.getAllFromCache(cls);
+		for(int i=0; i<cachedObjects.size(); i++){
+			list.add(cachedObjects.get(cachedObjects.keyAt(i)));
+		}
+		Cursor cursor = null;
+		try{
+			cursor = db.query(cls.getSimpleName(), null, null, null, null, null, null);
+		}catch(SQLException e){
+			return list;
+		}
+		if(!cursor.moveToFirst()) return list;
+		while(!cursor.isAfterLast()){
+			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
+			if(cachedObjects.get(id) == null){
+				T object = pc.getFromCache(cls, id);
+				if(object != null) list.add(object);
+				list.add(pc.fetchToCache(cls, cursor));
+				cursor.moveToNext();
+			}
+		}
+		cursor.close();
+		return list;
 	}
-	
+
 	public <T> int size(Class<T> cls){
 		return pm.size(cls);
 	}
-	
+
 	public void dropRecords(String recordName){
 		pm.dropRecords(recordName);
 	}
-	
+
 	public void setDefaultUpgradeValue(int value){
 		pm.setDefaultUpgradeValue(value);
 	}

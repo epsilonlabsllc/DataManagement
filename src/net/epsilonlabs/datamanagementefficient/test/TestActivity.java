@@ -1,5 +1,7 @@
 package net.epsilonlabs.datamanagementefficient.test;
 
+import java.util.ArrayList;
+
 import net.epsilonlabs.datamanagementefficient.library.DataManager;
 import android.app.Activity;
 import android.os.Bundle;
@@ -13,9 +15,10 @@ public class TestActivity extends Activity {
 		TextView tv = new TextView(this);
 		DataManager dm = DataManager.getInstance(this);
 		dm.open();
-		
-		dm.get(DataSample.class, 1);
-	
+		dm.add(new DataSample3());
+		dm.add(new DataSample3());
+		dm.add(new DataSample3());
+		ArrayList<DataSample3> list = dm.getAll(DataSample3.class);
 		dm.commit();
 		dm.close();
 		setContentView(tv);

@@ -16,6 +16,7 @@ import net.epsilonlabs.datamanagementefficient.directive.Directive;
 import net.epsilonlabs.datamanagementefficient.directive.UpdateDirective;
 import net.epsilonlabs.datamanagementefficient.exception.IdFieldIsInaccessibleException;
 import net.epsilonlabs.datamanagementefficient.exception.InaccessableObjectException;
+import android.database.Cursor;
 import android.util.SparseArray;
 
 public class PersistenceContext {
@@ -207,6 +208,16 @@ public class PersistenceContext {
 		T obj = pm.fetch(cls, rowId);
 		if(obj != null) cache.put(obj);
 		return obj;
+	}
+	
+	public <T> T fetchToCache(Class<T> cls, Cursor cursor){
+		T obj = pm.fetch(cls, cursor);
+		if(obj != null) cache.put(obj);
+		return obj;
+	}
+	
+	public <T> SparseArray<T> getAllFromCache(Class<T> cls){
+		return cache.getAll(cls);
 	}
 
 	private void delete(Class<?> instanceType, int rowId, Cache previouslyDeletedObjects) {

@@ -21,6 +21,13 @@ public class Cache {
 		return (T) classCache.get(id);
 	}
 	
+	@SuppressWarnings("unchecked")
+	public <T> SparseArray<T> getAll(Class<T> cls){
+		SparseArray<T> classMap = (SparseArray<T>) cache.get(cls);
+		if(classMap == null) return new SparseArray<T>();
+		return classMap;
+	}
+	
 	public void put(Object obj){
 		Class<?> cls = obj.getClass();
 		int id = DataUtil.getId(obj);

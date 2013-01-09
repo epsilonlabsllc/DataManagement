@@ -270,23 +270,6 @@ public class PersistenceManager {
 		return DataUtil.shallowCopy(object);
 	}
 
-	public <T> ArrayList<T> fetchSelection(Class<T> cls, String select){
-		ArrayList<T> list = new ArrayList<T>();
-		String tableName = cls.getSimpleName();
-		Cursor cursor = null;
-		try{
-			cursor = db.query(tableName, null, select, null, null, null, null);
-		}catch(SQLException e){
-			return null;
-		}
-		if(!cursor.moveToFirst()) return list;
-		while(!cursor.isAfterLast()){
-			list.add(DataUtil.shallowCopy(fetch(cls, cursor)));
-		}
-		cursor.close();
-		return list;
-	}
-
 	public void deleteReference(DeleteReferenceDirective drd){
 		String parentName = drd.getParentType().getSimpleName();
 		String childName = drd.getChildName();
