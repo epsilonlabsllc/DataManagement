@@ -255,7 +255,7 @@ public class PersistenceManager {
 		}
 	}
 
-	public Object fetch(Class<?> cls, int id){
+	public <T> T fetch(Class<T> cls, int id){
 		String tableName = cls.getSimpleName();
 		String SQLSelectionStatement = DataUtil.getIdField(cls).getName() + " = " + String.valueOf(id);
 		Cursor cursor = null;
@@ -265,9 +265,26 @@ public class PersistenceManager {
 			return null;
 		}
 		if(!cursor.moveToFirst()) return null;
-		Object object = fetch(cls, cursor);
+		T object = fetch(cls, cursor);
 		cursor.close();
 		return DataUtil.shallowCopy(object);
+	}
+
+	public <T> ArrayList<T> fetchSelection(Class<T> cls, String select){
+		ArrayList<T> list = new ArrayList<T>();
+		String tableName = cls.getSimpleName();
+		Cursor cursor = null;
+		try{
+			cursor = db.query(tableName, null, select, null, null, null, null);
+		}catch(SQLException e){
+			return null;
+		}
+		if(!cursor.moveToFirst()) return list;
+		while(!cursor.isAfterLast()){
+			list.add(DataUtil.shallowCopy(fetch(cls, cursor)));
+		}
+		cursor.close();
+		return list;
 	}
 
 	public void deleteReference(DeleteReferenceDirective drd){
@@ -439,6 +456,22 @@ public class PersistenceManager {
 			}
 		}
 		return createStrings;
+	}
+
+	public <T> int size(Class<T> cls){
+		Cursor c = null;
+		try{
+			c = db.query(cls.getSimpleName(), null, null , null, null, null, null);
+		}catch(SQLException e){
+			return 0;
+		}
+		int size = c.getCount();
+		c.close();
+		return size;
+	}
+	
+	public void dropRecords(String recordName){
+		db.execSQL("DROP TABLE " + recordName + ";");
 	}
 
 	public void setDefaultUpgradeValue(int value){

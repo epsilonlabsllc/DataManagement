@@ -1,5 +1,6 @@
 package net.epsilonlabs.datamanagementefficient.library;
 
+import java.util.ArrayList;
 import java.util.Queue;
 
 import net.epsilonlabs.datamanagementefficient.directive.CreateDirective;
@@ -10,7 +11,6 @@ import net.epsilonlabs.datamanagementefficient.directive.Directive;
 import net.epsilonlabs.datamanagementefficient.directive.UpdateDirective;
 import net.epsilonlabs.datamanagementefficient.exception.DatabaseNotOpenExpection;
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 public class DataManager {
@@ -83,34 +83,31 @@ public class DataManager {
 		pc.update(obj);
 	}
 
-	@SuppressWarnings("unchecked")
 	public <T> T get(Class<T> cls, int id){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
-		Object object = pc.getFromCache(cls, id);
-		if(object != null) return (T) object;
-		return (T) pc.fetchToCache(cls, id);
+		T object = pc.getFromCache(cls, id);
+		if(object != null) return object;
+		return pc.fetchToCache(cls, id);
 	}
-
-	public <T> int size(Class<T> cls){
+	
+	//TODO: is this too inefficient? gets directly from database
+	//other methods would have to query the database to find the list off all stored objects
+	public <T> ArrayList<T> getAll(Class<T> cls){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
-		Cursor c = db.query(cls.getSimpleName(), null, null , null, null, null, null);
-		int size = c.getCount();
-		c.close();
-		return size;
+		return pm.fetchSelection(cls, null);
+	}
+	
+	public <T> int size(Class<T> cls){
+		return pm.size(cls);
 	}
 	
 	public void dropRecords(String recordName){
-		db.execSQL("DROP TABLE " + recordName + ";");
+		pm.dropRecords(recordName);
 	}
 	
 	public void setDefaultUpgradeValue(int value){
 		pm.setDefaultUpgradeValue(value);
 	}
-
-	public SQLiteDatabase getDb() {
-		return db;
-	}
-
 	public PersistenceContext getPc() {
 		return pc;
 	}

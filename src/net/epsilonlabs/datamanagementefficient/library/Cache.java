@@ -14,10 +14,11 @@ public class Cache {
 		this.cache = new HashMap<Class<?>, SparseArray<Object>>();
 	}
 	
-	public Object get(Class<?> cls, int id){
+	@SuppressWarnings("unchecked")
+	public <T> T get(Class<T> cls, int id){
 		SparseArray<Object> classCache = cache.get(cls);
 		if(classCache == null) return null;
-		return classCache.get(id);
+		return (T) classCache.get(id);
 	}
 	
 	public void put(Object obj){

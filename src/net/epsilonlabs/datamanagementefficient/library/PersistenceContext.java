@@ -203,8 +203,8 @@ public class PersistenceContext {
 		delete(instanceType, rowId, new Cache());
 	}
 	
-	public Object fetchToCache(Class<?> cls, int rowId){
-		Object obj = pm.fetch(cls, rowId);
+	public <T> T fetchToCache(Class<T> cls, int rowId){
+		T obj = pm.fetch(cls, rowId);
 		if(obj != null) cache.put(obj);
 		return obj;
 	}
@@ -257,7 +257,7 @@ public class PersistenceContext {
 		}
 	}
 
-	public Object getFromCache(Class<?> cls, int id){
+	public <T> T getFromCache(Class<T> cls, int id){
 		return DataUtil.shallowCopy(cache.get(cls, id));
 	}
 
