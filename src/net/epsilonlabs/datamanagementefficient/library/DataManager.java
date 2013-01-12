@@ -198,6 +198,198 @@ public class DataManager {
 		cursor.close();
 		return list;
 	}
+	
+	/**
+	 * Retrieves copies of all stored objects of a given class with a given value for a field with the given name in an ArrayList
+	 * @param cls the class
+	 * @param fieldName the name of the field
+	 * @param value the value 
+	 * @return an ArrayList of all objects that match the search criteria
+	 */
+	public <T> ArrayList<T> find(Class<T> cls, String fieldName, float value){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
+		
+		Field field = null;
+		for(Field containedField : DataUtil.getFields(cls)){
+			if(containedField.getName().equals(fieldName)) field = containedField;
+		}
+		if(field == null) throw new FieldDoesNotExistException();
+		if(DataUtil.getFieldTypeId(field) != DataUtil.FIELD_TYPE_FLOAT) throw new MisMatchedFieldValueTypeException();
+
+		commit();
+		ArrayList<T> list = new ArrayList<T>();
+		String SQLWhereStatement = fieldName + " = " + String.valueOf(value);
+		Cursor cursor = null;
+		try{
+			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
+		}catch(SQLException e){
+			return list;
+		}
+		if(!cursor.moveToFirst()) return list;
+		while(!cursor.isAfterLast()){
+			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
+			T object = pc.getCopyFromCache(cls, id);
+			if(object != null) list.add(object);
+			else list.add(pc.fetchToCache(cls, cursor));
+			cursor.moveToNext();
+		}
+		cursor.close();
+		return list;
+	}
+	
+	/**
+	 * Retrieves copies of all stored objects of a given class with a given value for a field with the given name in an ArrayList
+	 * @param cls the class
+	 * @param fieldName the name of the field
+	 * @param value the value 
+	 * @return an ArrayList of all objects that match the search criteria
+	 */
+	public <T> ArrayList<T> find(Class<T> cls, String fieldName, double value){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
+		
+		Field field = null;
+		for(Field containedField : DataUtil.getFields(cls)){
+			if(containedField.getName().equals(fieldName)) field = containedField;
+		}
+		if(field == null) throw new FieldDoesNotExistException();
+		if(DataUtil.getFieldTypeId(field) != DataUtil.FIELD_TYPE_DOUBLE) throw new MisMatchedFieldValueTypeException();
+
+		commit();
+		ArrayList<T> list = new ArrayList<T>();
+		String SQLWhereStatement = fieldName + " = " + String.valueOf(value);
+		Cursor cursor = null;
+		try{
+			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
+		}catch(SQLException e){
+			return list;
+		}
+		if(!cursor.moveToFirst()) return list;
+		while(!cursor.isAfterLast()){
+			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
+			T object = pc.getCopyFromCache(cls, id);
+			if(object != null) list.add(object);
+			else list.add(pc.fetchToCache(cls, cursor));
+			cursor.moveToNext();
+		}
+		cursor.close();
+		return list;
+	}
+	
+	/**
+	 * Retrieves copies of all stored objects of a given class with a given value for a field with the given name in an ArrayList
+	 * @param cls the class
+	 * @param fieldName the name of the field
+	 * @param value the value 
+	 * @return an ArrayList of all objects that match the search criteria
+	 */
+	public <T> ArrayList<T> find(Class<T> cls, String fieldName, long value){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
+		
+		Field field = null;
+		for(Field containedField : DataUtil.getFields(cls)){
+			if(containedField.getName().equals(fieldName)) field = containedField;
+		}
+		if(field == null) throw new FieldDoesNotExistException();
+		if(DataUtil.getFieldTypeId(field) != DataUtil.FIELD_TYPE_LONG) throw new MisMatchedFieldValueTypeException();
+
+		commit();
+		ArrayList<T> list = new ArrayList<T>();
+		String SQLWhereStatement = fieldName + " = " + String.valueOf(value);
+		Cursor cursor = null;
+		try{
+			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
+		}catch(SQLException e){
+			return list;
+		}
+		if(!cursor.moveToFirst()) return list;
+		while(!cursor.isAfterLast()){
+			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
+			T object = pc.getCopyFromCache(cls, id);
+			if(object != null) list.add(object);
+			else list.add(pc.fetchToCache(cls, cursor));
+			cursor.moveToNext();
+		}
+		cursor.close();
+		return list;
+	}
+	
+	/**
+	 * Retrieves copies of all stored objects of a given class with a given value for a field with the given name in an ArrayList
+	 * @param cls the class
+	 * @param fieldName the name of the field
+	 * @param value the value 
+	 * @return an ArrayList of all objects that match the search criteria
+	 */
+	public <T> ArrayList<T> find(Class<T> cls, String fieldName, String value){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
+		
+		Field field = null;
+		for(Field containedField : DataUtil.getFields(cls)){
+			if(containedField.getName().equals(fieldName)) field = containedField;
+		}
+		if(field == null) throw new FieldDoesNotExistException();
+		if(DataUtil.getFieldTypeId(field) != DataUtil.FIELD_TYPE_STRING) throw new MisMatchedFieldValueTypeException();
+
+		commit();
+		ArrayList<T> list = new ArrayList<T>();
+		String SQLWhereStatement = fieldName + " = '" + String.valueOf(value) + "'";
+		Cursor cursor = null;
+		try{
+			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
+		}catch(SQLException e){
+			return list;
+		}
+		if(!cursor.moveToFirst()) return list;
+		while(!cursor.isAfterLast()){
+			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
+			T object = pc.getCopyFromCache(cls, id);
+			if(object != null) list.add(object);
+			else list.add(pc.fetchToCache(cls, cursor));
+			cursor.moveToNext();
+		}
+		cursor.close();
+		return list;
+	}
+	
+	/**
+	 * Retrieves copies of all stored objects of a given class with a given value for a field with the given name in an ArrayList
+	 * @param cls the class
+	 * @param fieldName the name of the field
+	 * @param value the value 
+	 * @return an ArrayList of all objects that match the search criteria
+	 */
+	public <T> ArrayList<T> find(Class<T> cls, String fieldName, boolean value){
+		if(!isOpen) throw new DatabaseNotOpenExpection();
+		
+		Field field = null;
+		for(Field containedField : DataUtil.getFields(cls)){
+			if(containedField.getName().equals(fieldName)) field = containedField;
+		}
+		if(field == null) throw new FieldDoesNotExistException();
+		if(DataUtil.getFieldTypeId(field) != DataUtil.FIELD_TYPE_BOOLEAN) throw new MisMatchedFieldValueTypeException();
+
+		commit();
+		ArrayList<T> list = new ArrayList<T>();
+		String SQLWhereStatement = fieldName + " = ";
+		if(value) SQLWhereStatement += String.valueOf(1);
+		else SQLWhereStatement += String.valueOf(0);
+		Cursor cursor = null;
+		try{
+			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
+		}catch(SQLException e){
+			return list;
+		}
+		if(!cursor.moveToFirst()) return list;
+		while(!cursor.isAfterLast()){
+			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
+			T object = pc.getCopyFromCache(cls, id);
+			if(object != null) list.add(object);
+			else list.add(pc.fetchToCache(cls, cursor));
+			cursor.moveToNext();
+		}
+		cursor.close();
+		return list;
+	}
 
 	/**
 	 * Returns the number of objects of a given class that are stored in the database.

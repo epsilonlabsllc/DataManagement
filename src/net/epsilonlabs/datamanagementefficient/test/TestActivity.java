@@ -20,7 +20,7 @@ public class TestActivity extends Activity {
 		DataUtil.getFields(ChildSample.class);
 		
 //		int id = dm.add(new ChildSample());
-		ArrayList<ChildSample> csList = dm.find(ChildSample.class, "num1", 5);
+		ArrayList<ChildSample> csList = dm.find(ChildSample.class, "num4", true);
 		
 		dm.close();
 		setContentView(tv);
