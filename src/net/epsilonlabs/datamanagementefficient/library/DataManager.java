@@ -1,5 +1,6 @@
 package net.epsilonlabs.datamanagementefficient.library;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Queue;
 
@@ -10,11 +11,12 @@ import net.epsilonlabs.datamanagementefficient.directive.DeleteReferenceDirectiv
 import net.epsilonlabs.datamanagementefficient.directive.Directive;
 import net.epsilonlabs.datamanagementefficient.directive.UpdateDirective;
 import net.epsilonlabs.datamanagementefficient.exception.DatabaseNotOpenExpection;
+import net.epsilonlabs.datamanagementefficient.exception.FieldDoesNotExistException;
+import net.epsilonlabs.datamanagementefficient.exception.MisMatchedFieldValueTypeException;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.SparseArray;
 
 /**
  * The DataManagement library allows developers to easily store objects and to a local database without writing many lines of their own code.
@@ -127,24 +129,20 @@ public class DataManager {
 	 */
 	public <T> T get(Class<T> cls, int id){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
-		T object = pc.getFromCache(cls, id);
+		T object = pc.getCopyFromCache(cls, id);
 		if(object != null) return object;
 		return pc.fetchToCache(cls, id);
 	}
 
 	/**
-	 * Retrieves all stored objects of a given class n an ArrayList.
+	 * Retrieves copies of all stored objects of a given class in an ArrayList.
 	 * @param cls the class
 	 * @return an ArrayList of all stored objects of a given class
 	 */
 	public <T> ArrayList<T> getAll(Class<T> cls){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
+		commit();
 		ArrayList<T> list = new ArrayList<T>();
-
-		SparseArray<T> cachedObjects = pc.getAllFromCache(cls);
-		for(int i=0; i<cachedObjects.size(); i++){
-			list.add(cachedObjects.get(cachedObjects.keyAt(i)));
-		}
 		Cursor cursor = null;
 		try{
 			cursor = db.query(DataUtil.getTableName(cls), null, null, null, null, null, null);
@@ -154,11 +152,46 @@ public class DataManager {
 		if(!cursor.moveToFirst()) return list;
 		while(!cursor.isAfterLast()){
 			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
-			if(cachedObjects.get(id) == null){
-				T object = pc.getFromCache(cls, id);
-				if(object != null) list.add(object);
-				list.add(pc.fetchToCache(cls, cursor));
-			}
+			T object = pc.getCopyFromCache(cls, id);
+			if(object != null) list.add(object);
+			else list.add(pc.fetchToCache(cls, cursor));
+			cursor.moveToNext();
+		}
+		cursor.close();
+		return list;
+	}
+	
+	/**
+	 * Retrieves copies of all stored objects of a given class with a given value for a field with the given name in an ArrayList
+	 * @param cls the class
+	 * @param fieldName the name of the field
+	 * @param value the value 
+	 * @return an ArrayList of all objects that match the search criteria
+	 */
+	public <T> ArrayList<T> find(Class<T> cls, String fieldName, int value){
+		if(!isOpen) throw new DatabaseNotOpenExpection();		
+		try {
+			Field field = cls.getField(fieldName);
+			if(DataUtil.getFieldTypeId(field) != DataUtil.FIELD_TYPE_INT) throw new MisMatchedFieldValueTypeException();
+		} catch (NoSuchFieldException e) {
+			throw new FieldDoesNotExistException();
+		}
+
+		commit();
+		ArrayList<T> list = new ArrayList<T>();
+		String SQLWhereStatement = fieldName + " = " + String.valueOf(value);
+		Cursor cursor = null;
+		try{
+			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
+		}catch(SQLException e){
+			return list;
+		}
+		if(!cursor.moveToFirst()) return list;
+		while(!cursor.isAfterLast()){
+			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
+			T object = pc.getCopyFromCache(cls, id);
+			if(object != null) list.add(object);
+			else list.add(pc.fetchToCache(cls, cursor));
 			cursor.moveToNext();
 		}
 		cursor.close();
@@ -171,8 +204,8 @@ public class DataManager {
 	 * @return the number of stored objects of the given class
 	 */
 	public <T> int size(Class<T> cls){
-		//TODO: fix this to work with the cache
 		if(!isOpen) throw new DatabaseNotOpenExpection();
+		commit();
 		return pm.size(cls);
 	}
 

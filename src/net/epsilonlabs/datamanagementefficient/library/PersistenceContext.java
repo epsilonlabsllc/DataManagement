@@ -207,17 +207,13 @@ public class PersistenceContext {
 	public <T> T fetchToCache(Class<T> cls, int rowId){
 		T obj = pm.fetch(cls, rowId);
 		if(obj != null) cache.put(obj);
-		return obj;
+		return DataUtil.copy(obj);
 	}
 	
 	public <T> T fetchToCache(Class<T> cls, Cursor cursor){
 		T obj = pm.fetch(cls, cursor);
 		if(obj != null) cache.put(obj);
-		return obj;
-	}
-	
-	public <T> SparseArray<T> getAllFromCache(Class<T> cls){
-		return cache.getAll(cls);
+		return DataUtil.copy(obj);
 	}
 
 	private void delete(Class<?> instanceType, int rowId, Cache previouslyDeletedObjects) {
@@ -268,7 +264,7 @@ public class PersistenceContext {
 		}
 	}
 
-	public <T> T getFromCache(Class<T> cls, int id){
+	public <T> T getCopyFromCache(Class<T> cls, int id){
 		return DataUtil.copy(cache.get(cls, id));
 	}
 

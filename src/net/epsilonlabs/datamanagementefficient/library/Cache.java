@@ -35,18 +35,6 @@ public class Cache {
 	}
 	
 	/**
-	 * Gets a the stored SparseArray that holds onto all objects of a given class. Returns an empty SparseArray if no SparseArray exists for the given class.
-	 * @param cls the class of stored objects
-	 * @return the cached SparseArray that holds the objects of the given class
-	 */
-	@SuppressWarnings("unchecked")
-	public <T> SparseArray<T> getAll(Class<T> cls){
-		SparseArray<T> classMap = (SparseArray<T>) cache.get(cls);
-		if(classMap == null) return new SparseArray<T>();
-		return classMap;
-	}
-	
-	/**
 	 * Places an object into the cache. Replaces existing objects with the same class and id number.
 	 * @param obj the object to be placed into the cache
 	 */
