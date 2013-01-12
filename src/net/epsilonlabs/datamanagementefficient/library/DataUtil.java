@@ -2,7 +2,6 @@ package net.epsilonlabs.datamanagementefficient.library;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -59,31 +58,21 @@ public class DataUtil {
 		else if(Collection.class.isAssignableFrom(field.getType())) return FIELD_TYPE_COLLECTION;
 		else return FIELD_TYPE_NON_PRIMITIVE;
 	}
-
-	/**
-	 * Removes final fields from an Array of fields and returns it. This prevents predetermined fields from being stored unnecessarily.
-	 * @param allFields - An array of Fields
-	 * @return - The fields in allFields that are not final
-	 */
-	public static Field[] removeFinalFields(Field[] allFields){
-		ArrayList<Field> newFieldList = new ArrayList<Field>();
-		for(Field field: allFields){
-			if (!java.lang.reflect.Modifier.isFinal(field.getModifiers())) newFieldList.add(field);
-		}
-		Field[] fieldArray = (Field[]) newFieldList.toArray(new Field[newFieldList.size()]);
+	
+	public static Field[] getFields(Class<?> cls){
+		LinkedList<Field> fieldList = getAllFields(cls, new LinkedList<Field>());
+		Field[] fieldArray = (Field[]) fieldList.toArray(new Field[fieldList.size()]);
 		Field.setAccessible(fieldArray, true);
 		return fieldArray;
 	}
 	
-	public static Field[] getFields(Class<?> cls){
-		Field[] allFields = cls.getDeclaredFields();
-		ArrayList<Field> newFieldList = new ArrayList<Field>();
-		for(Field field: allFields){
-			if (!java.lang.reflect.Modifier.isFinal(field.getModifiers())) newFieldList.add(field);
-		}
-		Field[] fieldArray = (Field[]) newFieldList.toArray(new Field[newFieldList.size()]);
-		Field.setAccessible(fieldArray, true);
-		return fieldArray;
+	private static LinkedList<Field> getAllFields(Class<?> cls, LinkedList<Field> fields){
+		for (Field field: cls.getDeclaredFields()) {
+			if (!java.lang.reflect.Modifier.isFinal(field.getModifiers())) fields.add(field);
+	    }
+
+	    if (cls.getSuperclass() != null) fields = getAllFields(cls.getSuperclass(), fields);
+	    return fields;
 	}
 
 	/**
@@ -92,7 +81,7 @@ public class DataUtil {
 	 * @return the id field of the class
 	 */
 	public static Field getIdField(Class<?> cls){
-		for(Field field : removeFinalFields(cls.getDeclaredFields())){
+		for(Field field : getFields(cls)){
 			if(field.getAnnotation(Id.class) != null){
 				if(field.getType().getName().equals("int")){
 					field.setAccessible(true);

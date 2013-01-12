@@ -5,7 +5,7 @@ import net.epsilonlabs.datamanagementefficient.annotations.Id;
 public class DataSample3{
 
 	@Id
-	private int ident;
+	protected int ident;
 	private int num1;
 	private double num2;
 	private String num3;
