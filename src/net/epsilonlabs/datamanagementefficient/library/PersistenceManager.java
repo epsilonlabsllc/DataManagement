@@ -29,11 +29,19 @@ public class PersistenceManager {
 	private Set<Class<?>> upToDateClasses;
 	private int defaultUpgradeValue = -1;
 
+	/**
+	 * Constructor. Instantiates a new Set that will hold Classes that are confirmed to be up to date.
+	 * @param db the SQLite database instance that is being used
+	 */
 	public PersistenceManager(SQLiteDatabase db){
 		this.db = db;
 		this.upToDateClasses = new HashSet<Class<?>>();
 	}
 
+	/**
+	 * Creates an object in the database.
+	 * @param cd the CreateDirective that holds the data to be added to the database.
+	 */
 	public void create(CreateDirective cd) {
 		try {
 			Object obj = cd.getInstance();
@@ -44,7 +52,7 @@ public class PersistenceManager {
 
 			if(!upToDateClasses.contains(type)){
 				executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
-				performTableUpgradeIfNeeded(type);
+				performTableUpgrade(type);
 			}
 
 			int rowId = (int) db.insert(tableName, idField.getName(), null);
@@ -82,6 +90,10 @@ public class PersistenceManager {
 		}
 	}
 
+	/**
+	 * Deletes an object from the database.
+	 * @param dd the DeleteDirective that holds the data to be deleted from the database.
+	 */
 	public void delete(DeleteDirective dd) {
 		Class<?> type = dd.getCls();
 		int rowId = dd.getRowId();
@@ -90,12 +102,16 @@ public class PersistenceManager {
 
 		if(!upToDateClasses.contains(type)){
 			executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
-			performTableUpgradeIfNeeded(type);
+			performTableUpgrade(type);
 		}
 
 		db.delete(tableName, idField.getName() + " = " + rowId, null);
 	}
 
+	/**
+	 * Updates an object in the database.
+	 * @param ud the UpdateDirective that holds the data to be updated in the database.
+	 */
 	public void update(UpdateDirective ud) {
 		Class<?> type = ud.getCls();
 		Map<Field, Object> fieldValueMap = ud.getValues();
@@ -105,7 +121,7 @@ public class PersistenceManager {
 
 		if(!upToDateClasses.contains(type)){
 			executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
-			performTableUpgradeIfNeeded(type);
+			performTableUpgrade(type);
 		}
 
 		ContentValues cv = new ContentValues();
@@ -138,10 +154,23 @@ public class PersistenceManager {
 		db.update(tableName, cv, idField.getName() + " = " + String.valueOf(rowId), null);
 	}
 
+	/**
+	 * Fetches an object from the database based on its Class a Cursor.
+	 * @param type the Class of the object to be returned
+	 * @param cursor the Cursor, positioned at the correct row, that represents the object to be fetched
+	 * @return the object from the database
+	 */
 	public <T> T fetch(Class<T> type, Cursor cursor){
 		return fetch(type, cursor, new Cache());
 	}
 
+	/**
+	 * Helper method used by fetch(Class, Cursor) that recursively fetches an object of a given class and all contained objects within it from the database.
+	 * @param type the Class of the object to be retrieved
+	 * @param cursor the Cursor, positioned at the correct row, that represents the object to be fetched
+	 * @param cache a map of all objects that have already been retrieved so far
+	 * @return The object from the database
+	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private <T> T fetch(Class<T> type, Cursor cursor, Cache cache){
 		Queue<Field> nonPrimitveFieldQueue = new LinkedList<Field>();
@@ -149,7 +178,7 @@ public class PersistenceManager {
 
 		if(!upToDateClasses.contains(type)){
 			executeCreateIfNotExistsSQLStatement(DataUtil.getTableName(type), createSQLStatementsFromFields(DataUtil.getFields(type)));
-			performTableUpgradeIfNeeded(type);
+			performTableUpgrade(type);
 		}
 
 		try{
@@ -255,6 +284,12 @@ public class PersistenceManager {
 		}
 	}
 
+	/**
+	 * Fetches an object from the database based on its Class and id number.
+	 * @param cls the Class of the object to be returned
+	 * @param id the id number of the object to be fetched from the database
+	 * @return the object from the database
+	 */
 	public <T> T fetch(Class<T> cls, int id){
 		String tableName = DataUtil.getTableName(cls);
 		String SQLSelectionStatement = DataUtil.getIdField(cls).getName() + " = " + String.valueOf(id);
@@ -270,6 +305,10 @@ public class PersistenceManager {
 		return DataUtil.copy(object);
 	}
 
+	/**
+	 * Deletes a reference from a reference table.
+	 * @param drd the DeleteReferenceDirective that holds the data to be deleted from the database
+	 */
 	public void deleteReference(DeleteReferenceDirective drd){
 		String parentName = DataUtil.getTableName(drd.getParentType());
 		String childName = drd.getChildName();
@@ -283,6 +322,10 @@ public class PersistenceManager {
 		db.delete(tableName, SQLSelectionString, null);
 	}
 
+	/**
+	 * Creates a reference in a reference table.
+	 * @param crd The CreateReferenceDirective that holds the data to be added to the database
+	 */
 	public void createReference(CreateReferenceDirective crd){
 		String parentName = DataUtil.getTableName(crd.getParentType());
 		String childName = crd.getChildName();
@@ -298,7 +341,13 @@ public class PersistenceManager {
 		db.insert(tableName, null, cv);
 	}
 
-	private void performTableUpgradeIfNeeded(Class<?> cls){
+	/**
+	 * Changes a table, if needed, to match new Fields if any have been added or removed. This method should only be called
+	 * once per instantiation of a PersistenceManager  per class. Classes that have already been confirmed to be up to date
+	 * are stored in upToDateClasses Set.
+	 * @param cls the class of the table to be upgraded
+	 */
+	private void performTableUpgrade(Class<?> cls){
 		upToDateClasses.add(cls);
 
 		HashSet<String> existingNonCollectionFieldList = new HashSet<String>();
@@ -380,11 +429,20 @@ public class PersistenceManager {
 		}
 	}
 
+	/**
+	 * Creates a reference table from a table name, if it does not already exist.
+	 * @param tableName the name of the table to be created
+	 */
 	private void executeCreateReferenceTableStatement(String tableName){
 		String createStatement = "CREATE TABLE IF NOT EXISTS " + tableName + "(" + PARENT_REFERENCE_NAME + " " + DataUtil.INT_FIELD + ", " + CHILD_REFERENCE_NAME + " " + DataUtil.INT_FIELD + ");";
 		db.execSQL(createStatement);
 	}
 
+	/**
+	 * Creates a table from a table name and an ArrayList of Strings that represent the Field names and types.
+	 * @param tableName the name of the table
+	 * @param createStrings an ArrayList of Strings that represent the Field names and types
+	 */
 	private void executeCreateIfNotExistsSQLStatement(String tableName, ArrayList<String> createStrings) {
 		String createStatement = "CREATE TABLE IF NOT EXISTS " + tableName + "(";
 		for (int i = 0; i < createStrings.size(); i++) {
@@ -394,6 +452,11 @@ public class PersistenceManager {
 		db.execSQL(createStatement);
 	}
 
+	/**
+	 * Creates an ArrayList of Strings from a Field[] which are the SQL representation of the Fields and their types.
+	 * @param fields a Field[] to be converted to SQL column name-type Strings
+	 * @return an ArrayList of Strings representing the column names and types for a new table
+	 */
 	private ArrayList<String> createSQLStatementsFromFields(Field[] fields) {
 		ArrayList<String> createStrings = new ArrayList<String>();
 		for (Field field : fields) {
@@ -441,6 +504,11 @@ public class PersistenceManager {
 		return createStrings;
 	}
 
+	/**
+	 * Returns the number of objects of a given Class currently stored in the database
+	 * @param cls the class
+	 * @return the number of objects currently being stored in the database
+	 */
 	public <T> int size(Class<T> cls){
 		Cursor c = null;
 		try{
@@ -453,14 +521,29 @@ public class PersistenceManager {
 		return size;
 	}
 	
+	/**
+	 * Drops all records of a given class from the database.
+	 * @param recordName the name of the class to be deleted
+	 */
 	public void dropRecords(String recordName){
 		db.execSQL("DROP TABLE " + recordName + ";");
 	}
 
+	/**
+	 * Sets the default value to be given to added numerical fields when an class is changed. When fields are added to a stored class, DataManagement automatically
+	 * adds these fields to existing objects in the database. If these fields are numerical, they can be given a default value when the objects are retrieved. If the
+	 * added fields are not primitive, they are defaulted to null.
+	 * @param value
+	 */
 	public void setDefaultUpgradeValue(int value){
 		this.defaultUpgradeValue = value;
 	}
 
+	/**
+	 * Gets the highest currently stored id of a given class stored in the database
+	 * @param instanceType the Class
+	 * @return the highest currently stored id number of all objects of the given class
+	 */
 	public int fetchMaxRowId(Class<?> instanceType){
 		int rowId;
 		try{
