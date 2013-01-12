@@ -160,7 +160,7 @@ public class DataManager {
 		cursor.close();
 		return list;
 	}
-	
+
 	/**
 	 * Retrieves copies of all stored objects of a given class with a given value for a field with the given name in an ArrayList
 	 * @param cls the class
@@ -169,13 +169,14 @@ public class DataManager {
 	 * @return an ArrayList of all objects that match the search criteria
 	 */
 	public <T> ArrayList<T> find(Class<T> cls, String fieldName, int value){
-		if(!isOpen) throw new DatabaseNotOpenExpection();		
-		try {
-			Field field = cls.getField(fieldName);
-			if(DataUtil.getFieldTypeId(field) != DataUtil.FIELD_TYPE_INT) throw new MisMatchedFieldValueTypeException();
-		} catch (NoSuchFieldException e) {
-			throw new FieldDoesNotExistException();
+		if(!isOpen) throw new DatabaseNotOpenExpection();
+		
+		Field field = null;
+		for(Field containedField : DataUtil.getFields(cls)){
+			if(containedField.getName().equals(fieldName)) field = containedField;
 		}
+		if(field == null) throw new FieldDoesNotExistException();
+		if(DataUtil.getFieldTypeId(field) != DataUtil.FIELD_TYPE_INT) throw new MisMatchedFieldValueTypeException();
 
 		commit();
 		ArrayList<T> list = new ArrayList<T>();
