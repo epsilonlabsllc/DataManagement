@@ -201,7 +201,7 @@ public class PersistenceManager {
 					int nonPrimitiveReferenceId = cursor.getInt(cursor.getColumnIndex(field.getName() + "_ref"));
 					Object cachedObject = cache.get(field.getType(), nonPrimitiveReferenceId);
 					if(cachedObject != null){
-						field.set(newObj, DataUtil.shallowCopy(cachedObject));
+						field.set(newObj, DataUtil.copy(cachedObject));
 					}else{
 						String nonPrimitiveReferenceSQLStatement = DataUtil.getIdField(field.getType()).getName() + " = " + nonPrimitiveReferenceId;
 						Cursor nonPrimitiveReferenceCursor = db.query(DataUtil.getTableName(field.getType()), null, nonPrimitiveReferenceSQLStatement, null, null, null, null);
@@ -230,7 +230,7 @@ public class PersistenceManager {
 							if(containedObjId != COLLECTION_EMPTY_VALUE){
 								Object cachedObject = cache.get(containedClass, containedObjId);
 								if(cachedObject != null){
-									newCollection.add(DataUtil.shallowCopy(cachedObject));
+									newCollection.add(DataUtil.copy(cachedObject));
 								}else{
 									String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
 									Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
@@ -267,7 +267,7 @@ public class PersistenceManager {
 		if(!cursor.moveToFirst()) return null;
 		T object = fetch(cls, cursor);
 		cursor.close();
-		return DataUtil.shallowCopy(object);
+		return DataUtil.copy(object);
 	}
 
 	public void deleteReference(DeleteReferenceDirective drd){

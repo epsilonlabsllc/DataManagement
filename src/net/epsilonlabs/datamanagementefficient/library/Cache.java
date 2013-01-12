@@ -1,19 +1,32 @@
 package net.epsilonlabs.datamanagementefficient.library;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import android.util.SparseArray;
 
+/**
+ * The Cache class is used to store objects in a map based on their class and id number.
+ * @author Tom Caputi
+ *
+ */
 public class Cache {
 	
-	private Map<Class<?>, SparseArray<Object>> cache;
+	private Map<Class<?>, SparseArray<Object>> cache; //The actual map that stores all the cached Objects
 	
+	/**
+	 * Instantiates the cache map
+	 */
 	public Cache(){
 		this.cache = new HashMap<Class<?>, SparseArray<Object>>();
 	}
 	
+	/**
+	 * Gets an object from the map based on its Class and id number. Returns null if there is no such object
+	 * @param cls the class of the object
+	 * @param id the id number of the object
+	 * @return the cached object of the given class
+	 */
 	@SuppressWarnings("unchecked")
 	public <T> T get(Class<T> cls, int id){
 		SparseArray<Object> classCache = cache.get(cls);
@@ -21,6 +34,11 @@ public class Cache {
 		return (T) classCache.get(id);
 	}
 	
+	/**
+	 * Gets a the stored SparseArray that holds onto all objects of a given class. Returns an empty SparseArray if no SparseArray exists for the given class.
+	 * @param cls the class of stored objects
+	 * @return the cached SparseArray that holds the objects of the given class
+	 */
 	@SuppressWarnings("unchecked")
 	public <T> SparseArray<T> getAll(Class<T> cls){
 		SparseArray<T> classMap = (SparseArray<T>) cache.get(cls);
@@ -28,6 +46,10 @@ public class Cache {
 		return classMap;
 	}
 	
+	/**
+	 * Places an object into the cache. Replaces existing objects with the same class and id number.
+	 * @param obj the object to be placed into the cache
+	 */
 	public void put(Object obj){
 		Class<?> cls = obj.getClass();
 		int id = DataUtil.getId(obj);
@@ -37,22 +59,17 @@ public class Cache {
 		cache.put(cls, classCache);
 	}
 	
+	/**
+	 * Removes an object from the cache.
+	 * @param cls the class of the object
+	 * @param id the id number of the object
+	 * @return true if an object existed and was successfully removed
+	 */
 	public boolean remove(Class<?> cls, int id){
 		SparseArray<Object> classCache = cache.get(cls);
 		if(classCache == null) return false;
 		if(classCache.get(id) == null) return false;
 		classCache.remove(id);
 		return true;
-	}
-	
-	public ArrayList<Object> getAllCachedObjects(){
-		ArrayList<Object> allObjectList = new ArrayList<Object>();
-		for(Class<?> cls : cache.keySet()){
-			SparseArray<Object> classList =  cache.get(cls);
-			for(int i=0; i<classList.size(); i++){
-				allObjectList.add(classList.get(classList.keyAt(i)));
-			}
-		}
-		return allObjectList;
 	}
 }

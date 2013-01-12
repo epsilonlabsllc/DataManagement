@@ -16,8 +16,9 @@ public class TestActivity extends Activity {
 		dm.open();
 		
 		DataUtil.getFields(ChildSample.class);
-		int id = dm.add(new ChildSample());
-		ChildSample cs = dm.get(ChildSample.class, id);
+		
+//		int id = dm.add(new ChildSample());
+		ChildSample cs = dm.get(ChildSample.class, 3);
 		
 		dm.close();
 		setContentView(tv);

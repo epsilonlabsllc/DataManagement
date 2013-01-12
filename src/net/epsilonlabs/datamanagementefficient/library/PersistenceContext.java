@@ -88,7 +88,7 @@ public class PersistenceContext {
 			}
 		}
 
-		Object newInstanceCopy = DataUtil.shallowCopy(newInstance);
+		Object newInstanceCopy = DataUtil.copy(newInstance);
 		cache.put(newInstanceCopy);	
 		pendingDirectivesQueue.offer(new CreateDirective(newInstanceCopy));
 		return rowId;
@@ -195,7 +195,7 @@ public class PersistenceContext {
 				}
 			}
 
-			cache.put(DataUtil.shallowCopy(updatedInstance));
+			cache.put(DataUtil.copy(updatedInstance));
 			if(!updateMap.isEmpty()) pendingDirectivesQueue.offer(new UpdateDirective(instanceType, rowId, updateMap));
 		}
 	}
@@ -269,7 +269,7 @@ public class PersistenceContext {
 	}
 
 	public <T> T getFromCache(Class<T> cls, int id){
-		return DataUtil.shallowCopy(cache.get(cls, id));
+		return DataUtil.copy(cache.get(cls, id));
 	}
 
 	public Queue<Directive> getPendingDirectivesQueue(){

@@ -59,24 +59,36 @@ public class DataUtil {
 		else return FIELD_TYPE_NON_PRIMITIVE;
 	}
 	
+	/**
+	 * Gets the fields of a given class that will be stored. Includes all Fields of superclasses of the given class. Final fields are nor stored.
+	 * Before they are returned, they are set to be accessible.
+	 * @param cls the class
+	 * @return a Field[] holding all of the Fields contained by the class and its superclasses. 
+	 */
 	public static Field[] getFields(Class<?> cls){
-		LinkedList<Field> fieldList = getAllFields(cls, new LinkedList<Field>());
+		LinkedList<Field> fieldList = getFields(cls, new LinkedList<Field>());
 		Field[] fieldArray = (Field[]) fieldList.toArray(new Field[fieldList.size()]);
 		Field.setAccessible(fieldArray, true);
 		return fieldArray;
 	}
 	
-	private static LinkedList<Field> getAllFields(Class<?> cls, LinkedList<Field> fields){
+	/**
+	 * Helper method used by getAll(Class<?> cls) to recursively get all fields of a given class and its superclasses.
+	 * @param cls the class
+	 * @param fields the current list of Fields that have been collected
+	 * @return a LinkedList of all the Fields in the given class and its superclasses
+	 */
+	private static LinkedList<Field> getFields(Class<?> cls, LinkedList<Field> fields){
 		for (Field field: cls.getDeclaredFields()) {
 			if (!java.lang.reflect.Modifier.isFinal(field.getModifiers())) fields.add(field);
 	    }
 
-	    if (cls.getSuperclass() != null) fields = getAllFields(cls.getSuperclass(), fields);
+	    if (cls.getSuperclass() != null) fields = getFields(cls.getSuperclass(), fields);
 	    return fields;
 	}
 
 	/**
-	 * Returns the field of a given class which has the @Id notation
+	 * Returns the field of a given class which has the @Id notation.
 	 * @param cls the class to be searched for an id field
 	 * @return the id field of the class
 	 */
@@ -93,6 +105,11 @@ public class DataUtil {
 		throw new IdFieldDoesNotExistException();
 	}
 	
+	/**
+	 * Returns the id number of a given storable object.
+	 * @param obj the object
+	 * @return the id number
+	 */
 	public static int getId(Object obj){
 		Class<?> cls = obj.getClass();
 		Field idField = getIdField(cls);
@@ -105,7 +122,7 @@ public class DataUtil {
 	}
 
 	/**
-	 * Returns the class stored within a Collection
+	 * Returns the class stored within a Collection.
 	 * @param field the Collection as a field of a given class
 	 * @return the stored class within the collection
 	 */
@@ -114,16 +131,32 @@ public class DataUtil {
 		return (Class<?>) listType.getActualTypeArguments()[0];
 	}
 	
-	public static <T> T shallowCopy(T instance){
-		return shallowCopy(instance, new Cache());
-	}
-	
+	/**
+	 * Gets the name of the table from a given class
+	 * @param cls the class
+	 * @return the name of the table that is holding the given class 
+	 */
 	public static String getTableName(Class<?> cls){
 		return cls.getCanonicalName().replace(".", "_");
 	}
+	
+	/**
+	 * Returns a copy of the given object.
+	 * @param instance the original object 
+	 * @return a copy of the object
+	 */
+	public static <T> T copy(T instance){
+		return copy(instance, new Cache());
+	}
 
+	/**
+	 * Helper method used by copy(T instance) to recursively copy all the Fields of an object to a new object
+	 * @param instance the original object
+	 * @param previosulyClonedObjects a map of objects that have already been copied
+	 * @return the copy of the object
+	 */
 	@SuppressWarnings({ "unchecked" })
-	private static <T> T shallowCopy(T instance, Cache previosulyClonedObjects){
+	private static <T> T copy(T instance, Cache previosulyClonedObjects){
 		if(instance == null) return null;
 		try{
 			Queue<Field> nonPrimitveFieldQueue = new LinkedList<Field>();
@@ -160,7 +193,7 @@ public class DataUtil {
 			previosulyClonedObjects.put(newInstance);
 
 			for(Field typeField : nonPrimitveFieldQueue){
-				typeField.set(newInstance, shallowCopy(typeField.get(instance), previosulyClonedObjects));
+				typeField.set(newInstance, copy(typeField.get(instance), previosulyClonedObjects));
 			}
 
 			for(Field typeField : nonPrimitveCollectionFieldQueue){
@@ -169,7 +202,7 @@ public class DataUtil {
 				}else{
 					Collection<Object> newCollection = (Collection<Object>) typeField.getType().newInstance();
 					for (Object containedObj : (Collection<?>) typeField.get(instance)) {
-						newCollection.add(shallowCopy(containedObj, previosulyClonedObjects));
+						newCollection.add(copy(containedObj, previosulyClonedObjects));
 					}
 					typeField.set(newInstance, newCollection);
 				}

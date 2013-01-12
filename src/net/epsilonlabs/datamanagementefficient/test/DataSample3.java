@@ -16,7 +16,7 @@ public class DataSample3{
 		num1 = 5;
 		num2 = 7.0;
 		num3 = "five";
-		num4 = true;
+		num4 = false;
 	}
 
 	public int getNum1() {
