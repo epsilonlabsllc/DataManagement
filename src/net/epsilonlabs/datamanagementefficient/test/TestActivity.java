@@ -1,9 +1,6 @@
 package net.epsilonlabs.datamanagementefficient.test;
 
-import java.util.ArrayList;
-
 import net.epsilonlabs.datamanagementefficient.library.DataManager;
-import net.epsilonlabs.datamanagementefficient.library.DataUtil;
 import android.app.Activity;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -17,10 +14,8 @@ public class TestActivity extends Activity {
 		DataManager dm = DataManager.getInstance(this);
 		dm.open();
 		
-		DataUtil.getFields(ChildSample.class);
-		
-//		int id = dm.add(new ChildSample());
-		ArrayList<ChildSample> csList = dm.find(ChildSample.class, "num4", true);
+		dm.add(new ChildSample());
+		dm.size(ChildSample.class);
 		
 		dm.close();
 		setContentView(tv);

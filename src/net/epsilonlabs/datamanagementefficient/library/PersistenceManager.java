@@ -510,9 +510,15 @@ public class PersistenceManager {
 	 * @return the number of objects currently being stored in the database
 	 */
 	public <T> int size(Class<T> cls){
+		
+		if(!upToDateClasses.contains(cls)){
+			executeCreateIfNotExistsSQLStatement(DataUtil.getTableName(cls), createSQLStatementsFromFields(DataUtil.getFields(cls)));
+			performTableUpgrade(cls);
+		}
+		
 		Cursor c = null;
 		try{
-			c = db.query(DataUtil.getTableName(cls), null, null , null, null, null, null);
+			c = db.query(DataUtil.getTableName(cls), new String[]{DataUtil.getIdField(cls).getName()}, null , null, null, null, null);
 		}catch(SQLException e){
 			return 0;
 		}
@@ -545,6 +551,12 @@ public class PersistenceManager {
 	 * @return the highest currently stored id number of all objects of the given class
 	 */
 	public int fetchMaxRowId(Class<?> instanceType){
+		
+		if(!upToDateClasses.contains(instanceType)){
+			executeCreateIfNotExistsSQLStatement(DataUtil.getTableName(instanceType), createSQLStatementsFromFields(DataUtil.getFields(instanceType)));
+			performTableUpgrade(instanceType);
+		}
+		
 		int rowId;
 		try{
 			Cursor cursor = db.rawQuery("SELECT MAX(" + DataUtil.getIdField(instanceType).getName() + ") FROM " + DataUtil.getTableName(instanceType), null);
