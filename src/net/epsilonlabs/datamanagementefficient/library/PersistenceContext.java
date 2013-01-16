@@ -19,13 +19,23 @@ import net.epsilonlabs.datamanagementefficient.exception.InaccessableObjectExcep
 import android.database.Cursor;
 import android.util.SparseArray;
 
+/**
+ * The PersistenceContext manages the cache of Objects (for faster querying) and creates a list of Directives that will
+ * sync the database with the cached changes when DataManager.commit() is called.
+ * @author Tom Caputi
+ *
+ */
 public class PersistenceContext {
 
-	private Cache cache;
-	private Queue<Directive> pendingDirectivesQueue;
-	private Map<Class<?>, Integer> nextIdMap;
-	private PersistenceManager pm;
+	private Cache cache; //holds a map of objects that have been previously interacted with, stored by class and id number
+	private Queue<Directive> pendingDirectivesQueue; //holds a list of actions that the Persistence Manager must take when committing changes
+	private Map<Class<?>, Integer> nextIdMap; //holds a map of Classes to the next available id number for that Class
+	private PersistenceManager pm; //manages database queries
 
+	/**
+	 * Constructor. Instantiates the PersistenceManager, cache, pendingDirectivesQueue, and nextIdMap
+	 * @param pm a PersistenceManager
+	 */
 	public PersistenceContext(PersistenceManager pm) {
 		this.pm = pm;
 		this.cache = new Cache();
@@ -33,6 +43,12 @@ public class PersistenceContext {
 		this.nextIdMap = new HashMap<Class<?>, Integer>();
 	}
 
+	/**
+	 * Assigns the original object an id number, adds a copy of it to the cache, and adds the required Directives
+	 * to the pendingDirectivesQueue to create this object in the database when DataManager.commit() is called.
+	 * @param the instance to be saved to the database
+	 * @return the id number assigned to the new instance
+	 */
 	public int create(Object newInstance) {
 		if(newInstance == null) return 0;
 		Class<?> instanceType = newInstance.getClass();
@@ -94,11 +110,23 @@ public class PersistenceContext {
 		return rowId;
 	}
 
+	/**
+	 * Updates an existing object in the cache based on its Class and id number and adds the required Directives
+	 * to the pendingDirectivesQueue to update this object in the database when DataManager.commit() is called.
+	 * @param updatedInstance the instance to update. Must have the Class and id number of an existing object
+	 * in the database or changes wont take place
+	 */
 	public void update(Object updatedInstance){
 		update(updatedInstance, new Cache());
 	}
 
-	public void update(Object updatedInstance, Cache previosulyUpdatedObjects){
+	/**
+	 * Helper method for update(Object instaceType). Recursively performs all the functions of update on the given instance 
+	 * and all of its contained objects.
+	 * @param updatedInstance the instance to update
+	 * @param previosulyUpdatedObjects a map of all objects that have already been updated by this call of update(Object instaceType).
+	 */
+	private void update(Object updatedInstance, Cache previosulyUpdatedObjects){
 		Map<Field, Object> updateMap = new HashMap<Field, Object>();
 		Class<?> instanceType = updatedInstance.getClass();
 		Field[] instanceFields = DataUtil.getFields(instanceType);
@@ -199,23 +227,25 @@ public class PersistenceContext {
 			if(!updateMap.isEmpty()) pendingDirectivesQueue.offer(new UpdateDirective(instanceType, rowId, updateMap));
 		}
 	}
-
+	
+	/**
+	 * Deletes an object from the cache based on its Class and id number and adds the required Directives
+	 * to the pendingDirectivesQueue to delete this object in the database when DataManager.commit() is called.
+	 * @param instanceType the Class of the object to be deleted
+	 * @param rowId the id number of the object to be deleted
+	 */
 	public void delete(Class<?> instanceType, int rowId){
 		delete(instanceType, rowId, new Cache());
 	}
-	
-	public <T> T fetchToCache(Class<T> cls, int rowId){
-		T obj = pm.fetch(cls, rowId);
-		if(obj != null) cache.put(obj);
-		return DataUtil.copy(obj);
-	}
-	
-	public <T> T fetchToCache(Class<T> cls, Cursor cursor){
-		T obj = pm.fetch(cls, cursor);
-		if(obj != null) cache.put(obj);
-		return DataUtil.copy(obj);
-	}
 
+	/**
+	 * Helper method for delete(Class<?> instanceType, int rowId). Recursively performs all the functions of
+	 * delete on the specified instance and all of its contained objects.
+	 * @param instanceType the Class of the object to be deleted
+	 * @param rowId the id number of the object to be deleted
+	 * @param previouslyDeletedObjects a map of all objects that have already been deleted by this call of
+	 * delete(Class<?> instanceType, int rowId).
+	 */
 	private void delete(Class<?> instanceType, int rowId, Cache previouslyDeletedObjects) {
 		if(previouslyDeletedObjects.get(instanceType, rowId) == null){
 			Field[] instanceFields = DataUtil.getFields(instanceType);		
@@ -263,20 +293,54 @@ public class PersistenceContext {
 			}
 		}
 	}
+	
+	/**
+	 * Fetches an object from the PersistenceManager based on its Class and id number and stores it to the cache.
+	 * @param cls the Class of the Object to be cached
+	 * @param rowId the id number of the Object to be cached
+	 * @return a copy of the Object that was cached
+	 */
+	public <T> T fetchToCache(Class<T> cls, int rowId){
+		T obj = pm.fetch(cls, rowId);
+		if(obj != null) cache.put(obj);
+		return DataUtil.copy(obj);
+	}
+	
+	/**
+	 * Fetches an object from the PersistenceManager based on its Class and a given Cursor (already moved to the correct index)
+	 * and stores it to the cache.
+	 * @param cls the Class of the Object to be cached
+	 * @param cursor the Cursor
+	 * @return a copy of the Object that was cached
+	 */
+	public <T> T fetchToCache(Class<T> cls, Cursor cursor){
+		T obj = pm.fetch(cls, cursor);
+		if(obj != null) cache.put(obj);
+		return DataUtil.copy(obj);
+	}
 
+	/**
+	 * Gets a copy of an Object that is in the cache based on its Class and id number.
+	 * @param cls the Class of the object
+	 * @param id the id number of the Object
+	 * @return the Object or null if it does not exist
+	 */
 	public <T> T getCopyFromCache(Class<T> cls, int id){
 		return DataUtil.copy(cache.get(cls, id));
 	}
-
-	public Queue<Directive> getPendingDirectivesQueue(){
-		return pendingDirectivesQueue;
-	}
-
+	
+	/**
+	 * Removes all Directives from the the pendingDirectivesQueue
+	 */
 	public void clearPendingDirectivesQueue(){
 		pendingDirectivesQueue.clear();
 	}
 
-	public Cache getCache(){
-		return cache;
+	/**
+	 * Getter for the pendingDirectivesQueue
+	 * @return pendingDirectivesQueue
+	 */
+	public Queue<Directive> getPendingDirectivesQueue(){
+		return pendingDirectivesQueue;
 	}
 }

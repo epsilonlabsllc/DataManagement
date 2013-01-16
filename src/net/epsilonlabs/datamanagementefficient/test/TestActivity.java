@@ -15,7 +15,7 @@ public class TestActivity extends Activity {
 		dm.open();
 		
 		dm.add(new ChildSample());
-		dm.size(ChildSample.class);
+		dm.find(ChildSample.class, "num4", false);
 		
 		dm.close();
 		setContentView(tv);

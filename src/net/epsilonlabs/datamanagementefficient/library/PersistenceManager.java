@@ -16,15 +16,22 @@ import net.epsilonlabs.datamanagementefficient.directive.DeleteReferenceDirectiv
 import net.epsilonlabs.datamanagementefficient.directive.UpdateDirective;
 import net.epsilonlabs.datamanagementefficient.exception.InternalDatabaseException;
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 
+/**
+ * The Persistence Manager class acts as DataManagement's direct liaison to the database. It handles all queries to the database.
+ * @author Tom Caputi
+ *
+ */
 public class PersistenceManager {
 
 	public static final int COLLECTION_EMPTY_VALUE = -1;
 	public static final String PARENT_REFERENCE_NAME = "PARENT";
 	public static final String CHILD_REFERENCE_NAME = "CHILD";
+	private SQLHelper helper;
 	private SQLiteDatabase db;
 	private Set<Class<?>> upToDateClasses;
 	private int defaultUpgradeValue = -1;
@@ -33,9 +40,44 @@ public class PersistenceManager {
 	 * Constructor. Instantiates a new Set that will hold Classes that are confirmed to be up to date.
 	 * @param db the SQLite database instance that is being used
 	 */
-	public PersistenceManager(SQLiteDatabase db){
-		this.db = db;
+	public PersistenceManager(Context context){
+		this.helper = new SQLHelper(context);
 		this.upToDateClasses = new HashSet<Class<?>>();
+	}
+	
+	/**
+	 * Opens the database for reading and writing.
+	 */
+	public void open(){
+		db = helper.getWritableDatabase();
+	}
+	
+	/**
+	 * Closes the database for reading and writing.
+	 */
+	public void close(){
+		db.close();
+	}
+	
+	/**
+	 * Returns a Cursor with all columns from the database based on a given Class and a given SQL where clause.
+	 * @param cls the class
+	 * @param whereString the SQL where clause
+	 * @return a cursor with all columns
+	 */
+	public Cursor getCursor(Class<?> cls, String whereString){
+		if(!upToDateClasses.contains(cls)){
+			upToDateClasses.add(cls);
+			executeCreateIfNotExistsSQLStatement(DataUtil.getTableName(cls), createSQLStatementsFromFields(DataUtil.getFields(cls)));
+			performTableUpgrade(cls);
+		}
+		
+		try{
+			Cursor cursor = db.query(DataUtil.getTableName(cls), null, whereString, null, null, null, null);
+			return cursor;
+		}catch(SQLException e){
+			throw new InternalDatabaseException();
+		}
 	}
 
 	/**
@@ -51,6 +93,7 @@ public class PersistenceManager {
 			Field[] instanceFields = DataUtil.getFields(type);
 
 			if(!upToDateClasses.contains(type)){
+				upToDateClasses.add(type);
 				executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
 				performTableUpgrade(type);
 			}
@@ -101,6 +144,7 @@ public class PersistenceManager {
 		Field idField = DataUtil.getIdField(type);
 
 		if(!upToDateClasses.contains(type)){
+			upToDateClasses.add(type);
 			executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
 			performTableUpgrade(type);
 		}
@@ -120,6 +164,7 @@ public class PersistenceManager {
 		Field idField = DataUtil.getIdField(type);
 
 		if(!upToDateClasses.contains(type)){
+			upToDateClasses.add(type);
 			executeCreateIfNotExistsSQLStatement(tableName, createSQLStatementsFromFields(DataUtil.getFields(type)));
 			performTableUpgrade(type);
 		}
@@ -177,6 +222,7 @@ public class PersistenceManager {
 		Queue<Field> nonPrimitveCollectionFieldQueue = new LinkedList<Field>();
 
 		if(!upToDateClasses.contains(type)){
+			upToDateClasses.add(type);
 			executeCreateIfNotExistsSQLStatement(DataUtil.getTableName(type), createSQLStatementsFromFields(DataUtil.getFields(type)));
 			performTableUpgrade(type);
 		}
@@ -291,6 +337,13 @@ public class PersistenceManager {
 	 * @return the object from the database
 	 */
 	public <T> T fetch(Class<T> cls, int id){
+		
+		if(!upToDateClasses.contains(cls)){
+			upToDateClasses.add(cls);
+			executeCreateIfNotExistsSQLStatement(DataUtil.getTableName(cls), createSQLStatementsFromFields(DataUtil.getFields(cls)));
+			performTableUpgrade(cls);
+		}
+		
 		String tableName = DataUtil.getTableName(cls);
 		String SQLSelectionStatement = DataUtil.getIdField(cls).getName() + " = " + String.valueOf(id);
 		Cursor cursor = null;
@@ -348,8 +401,6 @@ public class PersistenceManager {
 	 * @param cls the class of the table to be upgraded
 	 */
 	private void performTableUpgrade(Class<?> cls){
-		upToDateClasses.add(cls);
-
 		HashSet<String> existingNonCollectionFieldList = new HashSet<String>();
 		HashSet<String> newNonCollectionFieldList = new HashSet<String>();
 		HashSet<String> existingCollectionFieldList = new HashSet<String>();

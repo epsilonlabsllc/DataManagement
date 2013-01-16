@@ -15,8 +15,6 @@ import net.epsilonlabs.datamanagementefficient.exception.FieldDoesNotExistExcept
 import net.epsilonlabs.datamanagementefficient.exception.MisMatchedFieldValueTypeException;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
 
 /**
  * The DataManagement library allows developers to easily store objects and to a local database without writing many lines of their own code.
@@ -30,11 +28,9 @@ import android.database.sqlite.SQLiteDatabase;
 public class DataManager {
 
 	private static DataManager instance;
-	private SQLiteDatabase db = null;
 	private PersistenceContext pc = null;
 	private PersistenceManager pm = null;
 	private boolean isOpen = false;
-	private SQLHelper helper;
 
 	/**
 	 * Singleton instantiation method for getting a DataManager instance
@@ -51,26 +47,25 @@ public class DataManager {
 	 * @param context the context that is instantiating the DataManager object
 	 */
 	private DataManager(Context context){
-		this.helper = new SQLHelper(context);
+		pm = new PersistenceManager(context);
+		pc = new PersistenceContext(pm);
 	}
 
 	/**
-	 * Opens the database for writing.
+	 * Opens DataManager for writing.
 	 */
 	public void open(){
-		db = helper.getWritableDatabase();
-		pm = new PersistenceManager(db);
-		pc = new PersistenceContext(pm);
+		pm.open();
 		isOpen = true;
 	}
 
 	/**
-	 * Closes the database. This method calls commit() finalizing any changes before closing.
+	 * Closes DataManager. This method calls commit() finalizing any changes before closing.
 	 */
 	public void close(){
 		if(!isOpen) throw new DatabaseNotOpenExpection();
 		commit();
-		db.close();
+		pm.close();
 		isOpen = false;
 	}
 
@@ -143,12 +138,8 @@ public class DataManager {
 		if(!isOpen) throw new DatabaseNotOpenExpection();
 		commit();
 		ArrayList<T> list = new ArrayList<T>();
-		Cursor cursor = null;
-		try{
-			cursor = db.query(DataUtil.getTableName(cls), null, null, null, null, null, null);
-		}catch(SQLException e){
-			return list;
-		}
+		
+		Cursor cursor = pm.getCursor(cls, null);
 		if(!cursor.moveToFirst()) return list;
 		while(!cursor.isAfterLast()){
 			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
@@ -181,12 +172,7 @@ public class DataManager {
 		commit();
 		ArrayList<T> list = new ArrayList<T>();
 		String SQLWhereStatement = fieldName + " = " + String.valueOf(value);
-		Cursor cursor = null;
-		try{
-			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
-		}catch(SQLException e){
-			return list;
-		}
+		Cursor cursor = pm.getCursor(cls, SQLWhereStatement);
 		if(!cursor.moveToFirst()) return list;
 		while(!cursor.isAfterLast()){
 			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
@@ -219,12 +205,7 @@ public class DataManager {
 		commit();
 		ArrayList<T> list = new ArrayList<T>();
 		String SQLWhereStatement = fieldName + " = " + String.valueOf(value);
-		Cursor cursor = null;
-		try{
-			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
-		}catch(SQLException e){
-			return list;
-		}
+		Cursor cursor = pm.getCursor(cls, SQLWhereStatement);
 		if(!cursor.moveToFirst()) return list;
 		while(!cursor.isAfterLast()){
 			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
@@ -257,12 +238,7 @@ public class DataManager {
 		commit();
 		ArrayList<T> list = new ArrayList<T>();
 		String SQLWhereStatement = fieldName + " = " + String.valueOf(value);
-		Cursor cursor = null;
-		try{
-			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
-		}catch(SQLException e){
-			return list;
-		}
+		Cursor cursor = pm.getCursor(cls, SQLWhereStatement);
 		if(!cursor.moveToFirst()) return list;
 		while(!cursor.isAfterLast()){
 			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
@@ -295,12 +271,7 @@ public class DataManager {
 		commit();
 		ArrayList<T> list = new ArrayList<T>();
 		String SQLWhereStatement = fieldName + " = " + String.valueOf(value);
-		Cursor cursor = null;
-		try{
-			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
-		}catch(SQLException e){
-			return list;
-		}
+		Cursor cursor = pm.getCursor(cls, SQLWhereStatement);
 		if(!cursor.moveToFirst()) return list;
 		while(!cursor.isAfterLast()){
 			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
@@ -333,12 +304,7 @@ public class DataManager {
 		commit();
 		ArrayList<T> list = new ArrayList<T>();
 		String SQLWhereStatement = fieldName + " = '" + String.valueOf(value) + "'";
-		Cursor cursor = null;
-		try{
-			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
-		}catch(SQLException e){
-			return list;
-		}
+		Cursor cursor = pm.getCursor(cls, SQLWhereStatement);
 		if(!cursor.moveToFirst()) return list;
 		while(!cursor.isAfterLast()){
 			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
@@ -373,12 +339,7 @@ public class DataManager {
 		String SQLWhereStatement = fieldName + " = ";
 		if(value) SQLWhereStatement += String.valueOf(1);
 		else SQLWhereStatement += String.valueOf(0);
-		Cursor cursor = null;
-		try{
-			cursor = db.query(DataUtil.getTableName(cls), null, SQLWhereStatement, null, null, null, null);
-		}catch(SQLException e){
-			return list;
-		}
+		Cursor cursor = pm.getCursor(cls, SQLWhereStatement);
 		if(!cursor.moveToFirst()) return list;
 		while(!cursor.isAfterLast()){
 			int id = cursor.getInt(cursor.getColumnIndex(DataUtil.getIdField(cls).getName()));
