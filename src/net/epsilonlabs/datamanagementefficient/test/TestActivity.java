@@ -14,8 +14,10 @@ public class TestActivity extends Activity {
 		DataManager dm = DataManager.getInstance(this);
 		dm.open();
 		
-		dm.add(new ChildSample());
-		dm.find(ChildSample.class, "num4", false);
+		WhiteList whitelist = new WhiteList();
+		whitelist.getWhitelist().add(new Contact("1234567890"));
+		int id = dm.add(whitelist);
+		WhiteList wl2 = dm.get(WhiteList.class, id);
 		
 		dm.close();
 		setContentView(tv);

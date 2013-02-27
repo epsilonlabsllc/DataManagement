@@ -419,7 +419,8 @@ public class PersistenceManager {
 		while (!collectionReferenceCursor.isAfterLast()){
 			String tableName = collectionReferenceCursor.getString(collectionReferenceCursor.getColumnIndex("name"));
 			if(tableName.startsWith(DataUtil.getTableName(cls) + "_")){
-				String collectionName = tableName.split("_")[1];
+				String[] nameStrings = tableName.split("_");
+				String collectionName = nameStrings[nameStrings.length-1];
 				existingCollectionFieldList.add(collectionName);
 			}
 			collectionReferenceCursor.moveToNext();
