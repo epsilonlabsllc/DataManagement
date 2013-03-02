@@ -19,13 +19,13 @@ Examples:
 		private String num3;
 		private boolean num4;
 		public static final int num5 = 3;
-		private OtherStorableClass[] ds2;
+		private Collection<OtherStorableClass> col;
 	}
-A storable class must meet two requirements. First, the class must have a private instance variable of type int that will be used as the id number of the object. This variable may be read by the application, but the application should not have the capability to write to or change this variable in anyway. This variable is identified by the system with an @Id annotation. In addition, the class should not have any instance variables that are not either primitive types, strings, or other storable objects.
+A storable class must meet three requirements. First, the class must have a private instance variable of type int that will be used as the id number of the object. This variable may be read by the application, but the application should not have the capability to write to or change this variable in anyway. This variable is identified by the system with an @Id annotation. In addition, the class should not have any instance variables that are not either primitive types, strings, or other storable objects. Finally, the class must have an empty constructor.
 
 ###Instantiating a DataManager Object:
 
-	DataManager dm = new DataManager(context);
+	DataManager dm = DataManager.newInstance(context);
 The open method accepts the calling Context that is going to use the database. Usually this should be the calling Activity.
 
 ###Opening a Database for Use:
@@ -40,7 +40,8 @@ This method should be called after all database operations have been performed.
 
 ###Adding an Object to the Database:
 
-	int id = dm.add(new StorableClass());
+	StorableClass myObj = new StorableClass();
+	int id = dm.add(myObj);
 The add method accepts an object of a storable class as its only parameter and adds it to the database. It returns its id in the database for future use.
 
 ###Retrieving a Specific Item from the Database by ID:
@@ -70,7 +71,11 @@ The delete method accepts two parameters: The data type and id number of the obj
 
 Additional Notes:
 -----------------------------------------
-Id numbers are used by the database to ensure that objects are put in the correct place and to allow the program to access these objects. It is important that programs using this library do not attempt to set these variables as they will be initialized and managed by the library. These id numbers are unique for objects of a given type; objects of different types may have the same id number. In addition, if objects are deleted from the database their id numbers are left empty and are not reused.
+Id numbers are used by the database to ensure that objects are put in the correct place and to allow the program to access these objects. It is important that programs using this library do not attempt to set these variables as they will be initialized and managed by the library. These id numbers are unique for objects of a given type; objects of different types may have the same id number. In addition, if objects are deleted from the database their id numbers are left empty and are not reused. Another important note is that Strings are considered primitves for the purposes of this library. Thus, for instance, an ArrayList of Strings cannot currently be stored directly since they do not have id numbers. This can be accomplished by creating a simple wrapper class.
+
+Contact Us:
+-----------------------------------------
+If you have any questions or comments about this library feel free to email us at contactus@epsilonlabsllc.com
 
 Licensing:
 -----------------------------------------
