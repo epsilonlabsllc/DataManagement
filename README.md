@@ -26,7 +26,7 @@ A storable class must meet three requirements. First, the class must have a priv
 ###Instantiating a DataManager Object:
 
 	DataManager dm = DataManager.newInstance(context);
-The open method accepts the calling Context that is going to use the database. Usually this should be the calling Activity.
+The static constructor accepts the calling Context that is going to use the database. Usually this should be the calling Activity.
 
 ###Opening a Database for Use:
 
