@@ -61,8 +61,8 @@ The find method accepts three parameters: the data type of the stored object, th
 
 ###Updating an Object in the Database:
 
-	dm.update(id, updatedObject);
-The update method accepts two parameters: The id number of the object being updated and the updated object that will replace the existing one I the database. If the id number of the new object and the id number given as the first parameter do not match, the object’s id will be overwritten.
+	dm.update(updatedObject);
+The update method accepts  the updated object that will replace the existing one I the database. For safest use, updatedObject should be an object retrieved from the database using dm.get(). This will ensure that the correct object is updated in the database.
 
 ###Deleting an Object by its Id number:
 
