@@ -671,7 +671,6 @@ header {
 header h1 {
   font: 40px/48px "Copse", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #f3f3f3;
-  text-shadow: 0px 2px 0px #235796;
   margin: 0px;
   white-space: nowrap;
   overflow: hidden;
@@ -694,8 +693,8 @@ header p {
   margin-right: -382px;
   position: fixed;
   top: 115px;
-  background: #ffcc00;
-  border: 1px solid #f0b500;
+  background: #8e8e8e;
+  border: 1px solid #777;
   -moz-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.25);
   -webkit-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.25);
   -o-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.25);
@@ -764,7 +763,7 @@ header p {
   float: left;
   line-height: 52px;
   font-size: 90%;
-  color: #9d7f0d;
+  color: #fefefe;
   text-transform: uppercase;
   text-shadow: rgba(255, 255, 255, 0.2) 0 1px 0;
 }
