@@ -651,7 +651,7 @@ dt {
 }
 
 header {
-  padding: 25px 20px 40px 20px;
+  padding: 20px 0px 45px 0px;
   margin: 0;
   position: fixed;
   top: 0;
@@ -669,8 +669,9 @@ header {
   min-height: 76px;
 }
 header h1 {
-  font: 40px/48px "Copse", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font: 42px "Copse", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #f3f3f3;
+  display: inline;
   margin: 0px;
   white-space: nowrap;
   overflow: hidden;
@@ -1006,4 +1007,13 @@ footer {
     bottom: auto;
     width: auto;
   }
+}
+div#header-inner {
+	width: 650px;
+	margin: 0 auto;
+	text-align: left;
+}
+div#header-inner img {
+	float: left;
+	padding-right: 10px;
 }
