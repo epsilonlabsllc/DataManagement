@@ -48,7 +48,7 @@
 <p>DataManagement is a Java Android library designed to help easily and efficiently store aggregate classes to an SQLite database.  It eliminates the need to write separate classes to manage database – object interactions and allows developers to use simple methods to store, query, update, and delete objects. The library is capable of storing all objects of classes whose instance variables are either primitive data types or are themselves objects of another storable class.
 The DataManagement Library condenses many standard database features into several simple methods:</p>
 
-<h2>Examples:</h2>
+<h2>Examples</h2>
 
 <h3>Creating a Storable Class:</h3>
 
@@ -130,15 +130,15 @@ int id = dm.add(myObj);
 
 <p>The delete method accepts two parameters: The data type and id number of the object to be deleted.</p>
 
-<h2>Additional Notes:</h2>
+<h2>Additional Notes</h2>
 
 <p>Id numbers are used by the database to ensure that objects are put in the correct place and to allow the program to access these objects. It is important that programs using this library do not attempt to set these variables as they will be initialized and managed by the library. These id numbers are unique for objects of a given type; objects of different types may have the same id number. In addition, if objects are deleted from the database their id numbers are left empty and are not reused. Another important note is that Strings are considered primitves for the purposes of this library. Thus, for instance, an ArrayList of Strings cannot currently be stored directly since they do not have id numbers. This can be accomplished by creating a simple wrapper class.</p>
 
-<h2>Contact Us:</h2>
+<h2>Contact Us</h2>
 
 <p>If you have any questions or comments about this library feel free to email us at <a href="mailto:contactus@epsilonlabsllc.com">contactus@epsilonlabsllc.com</a></p>
 
-<h2>Licensing:</h2>
+<h2>Licensing</h2>
 
 <p>DataManagement is Currently Licensed under the GNU General Public License, version 3 (GPL-3.0). It is intended for open source use by anyone who would like to use it.</p>
       </section>
