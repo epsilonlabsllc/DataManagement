@@ -46,7 +46,7 @@ public class PersistenceContext {
 	/**
 	 * Assigns the original object an id number, adds a copy of it to the cache, and adds the required Directives
 	 * to the pendingDirectivesQueue to create this object in the database when DataManager.commit() is called.
-	 * @param the instance to be saved to the database
+	 * @param newInstance the instance to be saved to the database
 	 * @return the id number assigned to the new instance
 	 */
 	public int create(Object newInstance) {
