@@ -69,6 +69,12 @@ The update method accepts  the updated object that will replace the existing one
 	dm.delete(StorableClass.class, id);
 The delete method accepts two parameters: The data type and id number of the object to be deleted.
 
+###Upgrading Tables in the Database
+
+DataManagement is meant to allow users with little or no SQLite experience to be able to store and retreive Objects without dealing with tables directly. As a result, DataManagement handles table upgrades automatically. Table alterations are performed at runtime he next time that DataManagement is asked to use that class.
+Note: When adding and removing variables, all unaltered variable data will remain intact. When adding a variable, all existing Objects in the database will be given a default value for that variable. If that variable is numeric, you may change that value via setDefaultValue(). otherwise the data will be defaulted to null. At this time, DataManagement can only handle variable additions and removals; renaming a variable will delete all the data for that variable in the database.
+ 
+
 Additional Notes:
 -----------------------------------------
 Id numbers are used by the database to ensure that objects are put in the correct place and to allow the program to access these objects. It is important that programs using this library do not attempt to set these variables as they will be initialized and managed by the library. These id numbers are unique for objects of a given type; objects of different types may have the same id number. In addition, if objects are deleted from the database their id numbers are left empty and are not reused. Another important note is that Strings are considered primitves for the purposes of this library. Thus, for instance, an ArrayList of Strings cannot currently be stored directly since they do not have id numbers. This can be accomplished by creating a simple wrapper class.

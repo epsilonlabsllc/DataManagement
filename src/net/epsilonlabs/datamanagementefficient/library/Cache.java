@@ -1,24 +1,26 @@
 package net.epsilonlabs.datamanagementefficient.library;
 
+import java.lang.ref.SoftReference;
 import java.util.HashMap;
 import java.util.Map;
 
 import android.util.SparseArray;
 
 /**
- * The Cache class is used to store objects in a map based on their class and id number.
+ * The Cache class is used to store objects in a map based on their class and id number. The cache uses weak
+ * references to ensure that it does not get too large.
  * @author Tom Caputi
  *
  */
 public class Cache {
 	
-	private Map<Class<?>, SparseArray<Object>> cache; //The actual map that stores all the cached Objects
+	private Map<Class<?>, SparseArray<SoftReference<Object>>> cache; //The actual map that stores all the cached Objects
 	
 	/**
 	 * Instantiates the cache map
 	 */
 	public Cache(){
-		this.cache = new HashMap<Class<?>, SparseArray<Object>>();
+		this.cache = new HashMap<Class<?>, SparseArray<SoftReference<Object>>>();
 	}
 	
 	/**
@@ -29,9 +31,9 @@ public class Cache {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T get(Class<T> cls, int id){
-		SparseArray<Object> classCache = cache.get(cls);
+		SparseArray<SoftReference<Object>> classCache = cache.get(cls);
 		if(classCache == null) return null;
-		return (T) classCache.get(id);
+		return (T) classCache.get(id).get();
 	}
 	
 	/**
@@ -41,9 +43,9 @@ public class Cache {
 	public void put(Object obj){
 		Class<?> cls = obj.getClass();
 		int id = DataUtil.getId(obj);
-		SparseArray<Object> classCache = cache.get(cls);
-		if(classCache == null) classCache = new SparseArray<Object>();
-		classCache.put(id, obj);
+		SparseArray<SoftReference<Object>> classCache = cache.get(cls);
+		if(classCache == null) classCache = new SparseArray<SoftReference<Object>>();
+		classCache.put(id, new SoftReference<Object>(obj));
 		cache.put(cls, classCache);
 	}
 	
@@ -54,9 +56,9 @@ public class Cache {
 	 * @return true if an object existed and was successfully removed
 	 */
 	public boolean remove(Class<?> cls, int id){
-		SparseArray<Object> classCache = cache.get(cls);
+		SparseArray<SoftReference<Object>> classCache = cache.get(cls);
 		if(classCache == null) return false;
-		if(classCache.get(id) == null) return false;
+		if(classCache.get(id) == null || classCache.get(id).get() == null) return false;
 		classCache.remove(id);
 		return true;
 	}
