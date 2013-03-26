@@ -32,10 +32,9 @@ public class Cache {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T get(Class<T> cls, int id){
-			SparseArray<SoftReference<Object>> classCache = cache.get(cls);
-			if(classCache == null) return null;
-			if(classCache.get(id) == null) return null;
-			return (T) classCache.get(id).get();
+		SparseArray<SoftReference<Object>> classCache = cache.get(cls);
+		if(classCache == null || classCache.get(id) == null) return null;
+		return (T) classCache.get(id).get();
 		
 	}
 
