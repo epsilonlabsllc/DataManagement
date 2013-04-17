@@ -31,6 +31,7 @@ public class DataManager {
 	private PersistenceContext pc = null;
 	private PersistenceManager pm = null;
 	private boolean isOpen = false;
+	public static int count = 0;
 
 	/**
 	 * Singleton instantiation method for getting a DataManager instance

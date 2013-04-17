@@ -1,7 +1,5 @@
 package net.epsilonlabs.datamanagementefficient.test;
 
-import java.util.ArrayList;
-
 import net.epsilonlabs.datamanagementefficient.annotations.Id;
 
 public class DataSample{
@@ -13,16 +11,16 @@ public class DataSample{
 	private String num3;
 	private boolean num4;
 	public static final int num5 = 3;
-	private ArrayList<DataSample2> ds2depier;
+//	private ArrayList<DataSample2> ds2depier;
 
 	public DataSample(){
 		num1 = 3;
 		numderp = 3.0;
 		num3 = "three";
 		num4 = true;
-		ds2depier = new ArrayList<DataSample2>();
-		ds2depier.add(new DataSample2());
-		ds2depier.add(new DataSample2());
+//		ds2depier = new ArrayList<DataSample2>();
+//		ds2depier.add(new DataSample2());
+//		ds2depier.add(new DataSample2());
 	}
 
 	public int getNum1() {
@@ -65,26 +63,26 @@ public class DataSample{
 		this.ident = ident;
 	}
 
-	public ArrayList<DataSample2> getDs2() {
-		return ds2depier;
-	}
-
-	public void setDs2(ArrayList<DataSample2> ds2) {
-		this.ds2depier = ds2;
-	}
-
-	public String toString(){
-		if(ds2depier != null){
-			String string =  ident + " " + num1 + " " + numderp + " " + num3 + " " + num4 + "\n";
-			for(DataSample2 containedDs2 : ds2depier){
-				string += "     " + containedDs2.toString() + "\n";
-			}
-			return string;
-		}
-		
-		String string =  ident + " " + num1 + " " + numderp + " " + num3 + " " + num4 + "\n";
-		string += "     " + " null " + "\n";
-		return string;
-	}
+//	public ArrayList<DataSample2> getDs2() {
+//		return ds2depier;
+//	}
+//
+//	public void setDs2(ArrayList<DataSample2> ds2) {
+//		this.ds2depier = ds2;
+//	}
+//
+//	public String toString(){
+//		if(ds2depier != null){
+//			String string =  ident + " " + num1 + " " + numderp + " " + num3 + " " + num4 + "\n";
+//			for(DataSample2 containedDs2 : ds2depier){
+//				string += "     " + containedDs2.toString() + "\n";
+//			}
+//			return string;
+//		}
+//		
+//		String string =  ident + " " + num1 + " " + numderp + " " + num3 + " " + num4 + "\n";
+//		string += "     " + " null " + "\n";
+//		return string;
+//	}
 
 }
