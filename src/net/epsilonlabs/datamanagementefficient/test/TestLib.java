@@ -3,7 +3,7 @@ package net.epsilonlabs.datamanagementefficient.test;
 import java.util.ArrayList;
 
 import net.epsilonlabs.datamanagementefficient.exception.DatabaseNotOpenExpection;
-import net.epsilonlabs.datamanagementefficient.library.DataManager;
+import net.epsilonlabs.datamanagementefficient.user.DataManager;
 import android.content.Context;
 
 public class TestLib {
@@ -27,7 +27,7 @@ public class TestLib {
     public static void refreshData(final Context context) {
 
         // This is always called.
-        String closest_code = getClosestCode();
+        getClosestCode();
 
         // This might be called sometimes depending on the inputs.
         String some_new_code = "x";

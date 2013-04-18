@@ -1,8 +1,6 @@
 package net.epsilonlabs.datamanagementefficient.test;
 
-import java.util.Collection;
-
-import net.epsilonlabs.datamanagementefficient.library.DataManager;
+import net.epsilonlabs.datamanagementefficient.user.DataManager;
 import android.app.Activity;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -19,10 +17,9 @@ public class TestActivity extends Activity {
 //			tt.run();
 //		}
 		
-		DataManager dm =DataManager.getInstance(this);
+		DataManager dm = DataManager.getInstance(this);
 		dm.open();
-		Collection<DataSample> c = dm.getAll(DataSample.class);
-		int i = DataManager.count;
+		dm.getAll(DataSample.class);
 		dm.close();
 		
 		setContentView(tv);

@@ -1,6 +1,6 @@
 package net.epsilonlabs.datamanagementefficient.test;
 
-import net.epsilonlabs.datamanagementefficient.library.DataManager;
+import net.epsilonlabs.datamanagementefficient.user.DataManager;
 import android.content.Context;
 
 public class TestThread extends Thread{

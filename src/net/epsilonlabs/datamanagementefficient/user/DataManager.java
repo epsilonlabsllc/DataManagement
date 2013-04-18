@@ -1,4 +1,4 @@
-package net.epsilonlabs.datamanagementefficient.library;
+package net.epsilonlabs.datamanagementefficient.user;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -13,6 +13,9 @@ import net.epsilonlabs.datamanagementefficient.directive.UpdateDirective;
 import net.epsilonlabs.datamanagementefficient.exception.DatabaseNotOpenExpection;
 import net.epsilonlabs.datamanagementefficient.exception.FieldDoesNotExistException;
 import net.epsilonlabs.datamanagementefficient.exception.MisMatchedFieldValueTypeException;
+import net.epsilonlabs.datamanagementefficient.library.DataUtil;
+import net.epsilonlabs.datamanagementefficient.library.PersistenceContext;
+import net.epsilonlabs.datamanagementefficient.library.PersistenceManager;
 import android.content.Context;
 import android.database.Cursor;
 
@@ -31,7 +34,6 @@ public class DataManager {
 	private PersistenceContext pc = null;
 	private PersistenceManager pm = null;
 	private boolean isOpen = false;
-	public static int count = 0;
 
 	/**
 	 * Singleton instantiation method for getting a DataManager instance

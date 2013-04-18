@@ -73,7 +73,6 @@ public class PersistenceManager {
 		}
 		
 		try{
-			DataManager.count++;
 			Cursor cursor = db.query(DataUtil.getTableName(cls), null, whereString, null, null, null, null);
 			return cursor;
 		}catch(SQLException e){
@@ -280,7 +279,6 @@ public class PersistenceManager {
 						field.set(newObj, DataUtil.copy(cachedObject));
 					}else{
 						String nonPrimitiveReferenceSQLStatement = DataUtil.getIdField(field.getType()).getName() + " = " + nonPrimitiveReferenceId;
-						DataManager.count++;
 						Cursor nonPrimitiveReferenceCursor = db.query(DataUtil.getTableName(field.getType()), null, nonPrimitiveReferenceSQLStatement, null, null, null, null);
 						nonPrimitiveReferenceCursor.moveToFirst();
 						field.set(newObj, fetch(field.getType(), nonPrimitiveReferenceCursor, cache));
@@ -297,7 +295,6 @@ public class PersistenceManager {
 				String collectionReferenceTableName = DataUtil.getTableName(type) + "_" + field.getName();
 				String collectionReferenceSQLStatement = PARENT_REFERENCE_NAME + " = " + String.valueOf(rowId);
 				try{
-					DataManager.count++;
 					Cursor collectionReferenceCursor = db.query(collectionReferenceTableName, new String[]{CHILD_REFERENCE_NAME}, collectionReferenceSQLStatement, null, null, null, null);
 					if(!collectionReferenceCursor.moveToFirst()){
 						field.set(newObj, null);
@@ -310,7 +307,6 @@ public class PersistenceManager {
 								if(cachedObject != null){
 									newCollection.add(DataUtil.copy(cachedObject));
 								}else{
-									DataManager.count++;
 									String containedObjSQLStatement = containedObjIdField.getName() + " = " + String.valueOf(containedObjId);
 									Cursor containedObjCursor = db.query(containedObjTableName, null, containedObjSQLStatement, null, null, null, null);
 									containedObjCursor.moveToFirst();
@@ -351,7 +347,6 @@ public class PersistenceManager {
 		String SQLSelectionStatement = DataUtil.getIdField(cls).getName() + " = " + String.valueOf(id);
 		Cursor cursor = null;
 		try{
-			DataManager.count++;
 			cursor = db.query(tableName, null, SQLSelectionStatement, null, null, null, null);
 		}catch(SQLException e){
 			return null;

@@ -29,4 +29,8 @@ public class WhiteList {
 	public void setCurrentVolume(int currentVolume) {
 		this.currentVolume = currentVolume;
 	}
+	
+	public int getId() {
+		return id;
+	}
 }

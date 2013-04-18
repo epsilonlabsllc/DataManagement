@@ -29,4 +29,8 @@ public class CircularSample2 {
 		else string += "     null";
 		return string;
 	}
+	
+	public int getId() {
+		return id;
+	}
 }
