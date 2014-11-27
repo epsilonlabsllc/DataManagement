@@ -83,7 +83,7 @@ public class DataUtil {
 			if (!java.lang.reflect.Modifier.isFinal(field.getModifiers())) fields.add(field);
 	    }
 
-	    if (cls.getSuperclass() != null) fields = getFields(cls.getSuperclass(), fields);
+		if (cls.getSuperclass() != null && cls.getSuperclass() != java.lang.Object.class) fields = getFields(cls.getSuperclass(), fields);
 	    return fields;
 	}
 
